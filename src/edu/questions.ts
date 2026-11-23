@@ -1,0 +1,136 @@
+/**
+ * Question generators for ages 4-6. Every generator takes a random source so
+ * tests can check thousands of questions deterministically.
+ */
+
+export interface ChoiceQuestion<T extends string | number = string | number> {
+  /** Short text shown in the big question panel. */
+  prompt: string;
+  /** Optional line underneath (e.g. the sequence with a gap). */
+  detail?: string;
+  answer: T;
+  /** Shuffled options, always containing the answer exactly once. */
+  options: T[];
+}
+
+export type Rand = () => number;
+
+export function randInt(rand: Rand, min: number, max: number): number {
+  return min + Math.floor(rand() * (max - min + 1));
+}
+
+export function shuffle<T>(rand: Rand, items: T[]): T[] {
+  const a = items.slice();
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(rand() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+/** Pick distractors close to the answer: near-misses teach more than random numbers. */
+function numberOptions(rand: Rand, answer: number, count: number, min: number, max: number): number[] {
+  const pool: number[] = [];
+  for (let d = 1; d <= 3; d++) {
+    if (answer - d >= min) pool.push(answer - d);
+    if (answer + d <= max) pool.push(answer + d);
+  }
+  const picks = shuffle(rand, pool).slice(0, count - 1);
+  return shuffle(rand, [answer, ...picks]);
+}
+
+/** a + b with the sum no larger than maxSum (addition within 10). */
+export function additionQuestion(rand: Rand, maxSum: number, optionCount = 3): ChoiceQuestion<number> {
+  const sum = randInt(rand, 2, Math.min(10, maxSum));
+  const a = randInt(rand, 1, sum - 1);
+  const b = sum - a;
+  return {
+    prompt: `Affan, berapakah ${a} + ${b}?`,
+    detail: `${a} + ${b} = ?`,
+    answer: sum,
+    options: numberOptions(rand, sum, optionCount, 1, 12),
+  };
+}
+
+/** a - b with a no larger than max (subtraction within 10), never negative. */
+export function subtractionQuestion(rand: Rand, max: number, optionCount = 3): ChoiceQuestion<number> {
+  const a = randInt(rand, 2, Math.min(10, max));
+  const b = randInt(rand, 1, a - 1);
+  return {
+    prompt: `Affan, berapakah ${a} - ${b}?`,
+    detail: `${a} − ${b} = ?`,
+    answer: a - b,
+    options: numberOptions(rand, a - b, optionCount, 0, 10),
+  };
+}
+
+const ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+
+export interface SequenceQuestion extends ChoiceQuestion<string> {
+  /** The full sequence, e.g. ['A','B','C','D','E']. */
+  sequence: string[];
+  /** Index of the missing item. */
+  missingIndex: number;
+}
+
+/**
+ * Five consecutive letters with one missing, e.g. A B C ? E.
+ * `maxStart` limits how far into the alphabet the run may begin (0 = always A).
+ */
+export function missingLetterQuestion(rand: Rand, maxStart = 21, optionCount = 3): SequenceQuestion {
+  const start = randInt(rand, 0, Math.min(21, maxStart));
+  const sequence = ALPHABET.slice(start, start + 5).split('');
+  const missingIndex = randInt(rand, 1, 4);
+  const answer = sequence[missingIndex];
+  // Distractors are letters outside the visible run, near the answer.
+  const pool: string[] = [];
+  for (let d = 1; d <= 6 && pool.length < 6; d++) {
+    for (const idx of [start + missingIndex - d, start + missingIndex + d]) {
+      const ch = ALPHABET[idx];
+      if (ch && !sequence.includes(ch) && !pool.includes(ch)) pool.push(ch);
+    }
+  }
+  const picks = shuffle(rand, pool).slice(0, optionCount - 1);
+  const shown = sequence.map((c, i) => (i === missingIndex ? '?' : c));
+  return {
+    prompt: 'Huruf apakah yang hilang?',
+    detail: shown.join('  '),
+    answer,
+    options: shuffle(rand, [answer, ...picks]),
+    sequence,
+    missingIndex,
+  };
+}
+
+/** 1, 2, 3, ?, 5 style number sequences. */
+export function missingNumberQuestion(rand: Rand, maxStart = 15, optionCount = 3): ChoiceQuestion<number> {
+  const start = randInt(rand, 1, maxStart);
+  const seq = [0, 1, 2, 3, 4].map((i) => start + i);
+  const missing = randInt(rand, 1, 4);
+  const answer = seq[missing];
+  const shown = seq.map((n, i) => (i === missing ? '?' : String(n)));
+  return {
+    prompt: 'Nombor apakah yang hilang?',
+    detail: shown.join('  '),
+    answer,
+    options: numberOptions(rand, answer, optionCount, 0, 20),
+  };
+}
+
+/** "Count the stars" with the objects drawn as emoji. */
+export function countQuestion(rand: Rand, max = 10, emoji = '⭐', noun = 'bintang', optionCount = 3): ChoiceQuestion<number> {
+  const n = randInt(rand, 2, max);
+  return {
+    prompt: `Kira ${noun}. Ada berapa?`,
+    detail: Array.from({ length: n }, () => emoji).join(' '),
+    answer: n,
+    options: numberOptions(rand, n, optionCount, 1, 20),
+  };
+}
+
+export const PRAISE = ['Bagus Affan!', 'Hebatnya!', 'Betul!', 'Wah, hebat!', 'Pandainya Affan!'];
+export const ENCOURAGE = ['Cuba lagi, Affan!', 'Tak mengapa, kita belajar sama-sama!', 'Oops! Cuba lagi!', 'Hampir betul! Cuba sekali lagi!'];
+
+export function pick<T>(rand: Rand, items: T[]): T {
+  return items[Math.floor(rand() * items.length)];
+}

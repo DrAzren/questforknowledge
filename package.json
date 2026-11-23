@@ -1,0 +1,23 @@
+{
+  "name": "curious-affan-quest-for-knowledge",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "The Curious Affan: Quest for Knowledge - a 3D educational adventure game for preschool children",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "test:e2e": "node tests/e2e/play.cjs && node tests/e2e/realtime.cjs"
+  },
+  "dependencies": {
+    "three": "^0.170.0"
+  },
+  "devDependencies": {
+    "@types/three": "^0.170.0",
+    "typescript": "^5.9.3",
+    "vite": "^5.4.21",
+    "vitest": "^2.1.9"
+  }
+}
