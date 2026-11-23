@@ -21,6 +21,8 @@ interface Gem {
 interface Task {
   kind: 'colour' | 'shape' | 'count';
   prompt: string;
+  /** Narration clip that reads the task aloud. */
+  voice: string;
   need: number;
   matches(g: Gem): boolean;
   /** [shape, colour] for every gem laid out in this round. */
@@ -119,6 +121,7 @@ export class JungleTreasureStage extends JungleStage {
       {
         kind: 'colour',
         prompt: `Kumpul 3 permata ${colour.toUpperCase()} ${COLOR_ICON[colour]}`,
+        voice: `q_kumpul_${colour}`,
         need: 3,
         matches: (gem) => gem.color === colour,
         layout: COLORS.flatMap((c) => Array.from({ length: c === colour ? 3 : 2 }, (): [GemShape, string] => ['bulat', c])),
@@ -126,6 +129,7 @@ export class JungleTreasureStage extends JungleStage {
       {
         kind: 'shape',
         prompt: `Kumpul 3 bentuk ${shape.toUpperCase()} ${SHAPE_ICON[shape]}`,
+        voice: `q_kumpul_${shape.replace(/ /g, '_')}`,
         need: 3,
         matches: (gem) => gem.shape === shape,
         layout: SHAPES.flatMap((s, i) => Array.from({ length: s === shape ? 3 : 2 }, (_, j): [GemShape, string] => [s, COLORS[(i + j) % COLORS.length]])),
@@ -133,6 +137,7 @@ export class JungleTreasureStage extends JungleStage {
       {
         kind: 'count',
         prompt: `Kumpul ${count} bintang ⭐`,
+        voice: `q_kumpul_${count}_bintang`,
         need: count,
         matches: (gem) => gem.shape === 'bintang',
         layout: [
@@ -197,7 +202,11 @@ export class JungleTreasureStage extends JungleStage {
     this.taskIndex = index;
     this.collected = 0;
     const task = this.tasks[index];
-    const spots = shuffle(this.game.rand, SPOTS).slice(0, task.layout.length);
+    // Never drop a gem right where Affan is standing: it would be collected before he chose it.
+    const b = this.game.body;
+    const clear = SPOTS.filter(([x, z]) => Math.hypot(x - b.x, z - b.z) > 2.2);
+    const pool = clear.length >= task.layout.length ? clear : SPOTS;
+    const spots = shuffle(this.game.rand, pool).slice(0, task.layout.length);
     task.layout.forEach(([shape, color], i) => {
       const [x, z, h] = spots[i];
       const obj = makeGem(shape, color);
@@ -211,7 +220,7 @@ export class JungleTreasureStage extends JungleStage {
   private updatePanel(): void {
     const task = this.tasks[this.taskIndex];
     const dots = Array.from({ length: task.need }, (_, i) => (i < this.collected ? '●' : '○')).join(' ');
-    this.game.showQuestion(task.prompt, `${dots}   ${this.collected} / ${task.need}`);
+    this.game.showQuestion(task.prompt, `${dots}   ${this.collected} / ${task.need}`, task.voice);
   }
 
   intro(): { duration: number; camera(t: number, out: { pos: THREE.Vector3; look: THREE.Vector3 }): void } {
@@ -238,7 +247,7 @@ export class JungleTreasureStage extends JungleStage {
         } else {
           this.chestState = 'ready';
           this.chestArrow.visible = true;
-          this.game.showQuestion('Hebat! Pergi ke peti harta! 🎁');
+          this.game.showQuestion('Hebat! Pergi ke peti harta! 🎁', undefined, 'q_peti_harta');
           this.game.say('Jom buka peti harta!', { emote: 'celebrate' });
         }
       }

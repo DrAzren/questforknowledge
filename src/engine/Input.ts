@@ -39,6 +39,8 @@ export class Input {
   /** Number-key answers (1-4) are forwarded here for quiz panels. */
   onNumberKey: ((n: number) => void) | null = null;
   onPauseKey: (() => void) | null = null;
+  /** R replays the spoken question. */
+  onReplayKey: (() => void) | null = null;
 
   constructor(private root: HTMLElement) {
     window.addEventListener('keydown', this.onKeyDown);
@@ -68,6 +70,7 @@ export class Input {
       this.onNumberKey(Number(e.code.slice(-1)));
     }
     if ((e.code === 'Escape' || e.code === 'KeyP') && this.onPauseKey) this.onPauseKey();
+    if (e.code === 'KeyR' && !e.repeat && this.onReplayKey) this.onReplayKey();
   };
 
   private onKeyUp = (e: KeyboardEvent): void => {

@@ -191,12 +191,12 @@ const shot = async (page, file) => { await page.evaluate(() => window.bot.render
     const info = await ev(() => { const st = window.bot.g.stage; const task = st.tasks[st.taskIndex]; return { index: st.taskIndex, kind: task.kind, prompt: task.prompt, need: task.need, gems: st.gems.map((gm, i) => ({ i, match: task.matches(gm), h: gm.baseY - 0.75 })) }; });
     check(`task ${t + 1} (${info.kind}) is offered: "${info.prompt}"`, info.index === t && info.gems.filter((x) => x.match).length >= info.need, `gems=${info.gems.length}`);
     s = await state(page);
-    check(`task ${t + 1}: panel shows the task and progress`, s.question.includes('Kumpul') && s.question.includes(`0 / ${info.need}`), s.question);
+    check(`task ${t + 1}: panel shows the task and progress, with narration`, s.question.includes('Kumpul') && s.question.includes(`0 / ${info.need}`) && /^q_kumpul_/.test(s.questionVoice || ''), `${s.question} / ${s.questionVoice}`);
     if (t === 0) {
       const wrong = info.gems.find((x) => !x.match && x.h === 0);
       const r = await goGem(wrong.i);
       s = await state(page);
-      check('wrong gem: not collected, no heart lost', !r.taken && r.collected === 0 && s.hearts === 3);
+      check('wrong gem: not collected, no heart lost', !r.taken && s.hearts === 3 && await ev(() => window.bot.g.audio.log.includes('sfx:wrong')));
     }
     let guard = 0;
     while (guard++ < 12) {

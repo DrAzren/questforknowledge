@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
-  additionQuestion, countQuestion, missingLetterQuestion, missingNumberQuestion, subtractionQuestion,
+  ADDITION_POOL, additionQuestion, countQuestion, ENCOURAGE_LINES, missingLetterQuestion, missingNumberQuestion,
+  PRAISE_LINES, spokenAdditionQuestion, subtractionQuestion,
   type ChoiceQuestion,
 } from '../src/edu/questions';
 
@@ -33,6 +34,28 @@ describe('question generators (age 4-6 limits)', () => {
       checkOptions(q);
       q.options.forEach((o) => expect(o).toBeGreaterThanOrEqual(1));
     }
+  });
+
+  it('spoken addition: every tier stays within its limit and names its narration clip', () => {
+    const limits = [5, 7, 10];
+    for (let i = 0; i < 1500; i++) {
+      const tier = i % 3;
+      const q = spokenAdditionQuestion(rand, tier);
+      const [a, b] = q.detail!.match(/\d+/g)!.map(Number);
+      expect(a + b).toBe(q.answer);
+      expect(q.answer).toBeLessThanOrEqual(limits[tier]);
+      expect(q.voice).toBe(`q_add_${a}_${b}`);
+      expect(ADDITION_POOL[tier].some(([x, y]) => x === a && y === b)).toBe(true);
+      checkOptions(q);
+    }
+  });
+
+  it('every feedback line has its own voice clip', () => {
+    for (const line of [...PRAISE_LINES, ...ENCOURAGE_LINES]) {
+      expect(line.text.length).toBeGreaterThan(3);
+      expect(line.voice).toMatch(/^[a-z_]+$/);
+    }
+    expect(new Set(PRAISE_LINES.map((l) => l.voice)).size).toBe(PRAISE_LINES.length);
   });
 
   it('subtraction stays within 10 and never goes negative', () => {

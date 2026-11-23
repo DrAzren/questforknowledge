@@ -16,13 +16,14 @@ export interface GameApi {
   rand: () => number;
   addCoin(at: THREE.Vector3): void;
   addStar(at: THREE.Vector3): void;
-  /** Affan fell in water or off the world: splash, lose a heart, return to the checkpoint. */
-  fell(kind: 'water' | 'void'): void;
+  /** Affan fell in water, sand or off the world: lose a heart, return to the checkpoint. */
+  fell(kind: 'water' | 'sand' | 'void'): void;
   setCheckpoint(x: number, y: number, z: number): void;
   praise(at?: THREE.Vector3): void;
   encourage(): void;
   say(text: string, opts?: { voice?: string; emote?: Emote; duration?: number }): void;
-  showQuestion(prompt: string, detail?: string): void;
+  /** Show the question panel; `voice` names the narration clip that reads it aloud. */
+  showQuestion(prompt: string, detail?: string, voice?: string): void;
   hideQuestion(): void;
   setTask(text: string | null): void;
   /** Big tappable answer buttons (also keys 1-3). Resolves once the right answer is chosen. */
@@ -49,6 +50,8 @@ export interface WorldDef {
   tagline: string;
   emoji: string;
   badge: { id: string; name: string; emoji: string };
+  /** What Affan says when he first arrives in this world. */
+  introLine?: { text: string; voice: string };
   theme: WorldTheme;
   stages: StageDef[];
   /** Worlds that are designed but not built yet show "coming soon". */
@@ -83,12 +86,16 @@ export abstract class StageBase {
   protected colliders: Collider[] = [];
   protected pickups: Pickup[] = [];
   protected checkpoints: Checkpoint[] = [];
+  /** Platforms and obstacles that travel along a path; riders are carried by the physics. */
+  protected movers: { mesh: THREE.Object3D; collider: Collider; path: (time: number) => [number, number, number]; meshDY: number }[] = [];
   /** Where Affan starts. */
   spawn = new THREE.Vector3(0, 0, 4);
   /** How far behind the spawn point Affan walks in from during the opening shots (must be clear ground). */
   introWalk = 2.2;
   /** Water surface height; falling below it triggers a splash. */
   waterLevel: number | null = null;
+  /** What is down there: water splashes, sand swallows softly. */
+  pitKind: 'water' | 'sand' = 'water';
   /** Anything below this is "fell off the world". */
   voidLevel = -12;
   /** Camera offset from Affan (behind and above). */
@@ -169,6 +176,29 @@ export abstract class StageBase {
     return this.collide(boxCollider(x, z, hx, hz, top, bottom));
   }
 
+  /**
+   * Register something that moves. `path(time)` returns the collider's centre
+   * x, top surface height and centre z; the mesh follows with an optional
+   * vertical offset.
+   */
+  protected mover(mesh: THREE.Object3D, collider: Collider, path: (time: number) => [number, number, number], meshDY = 0): void {
+    const [x, top, z] = path(0);
+    const h = collider.top - collider.bottom;
+    collider.x = x;
+    collider.z = z;
+    collider.top = top;
+    collider.bottom = top - h;
+    mesh.position.set(x, top + meshDY, z);
+    this.group.add(mesh);
+    this.collide(collider);
+    this.movers.push({ mesh, collider, path, meshDY });
+  }
+
+  /** The checkpoint Affan would return to, or null if he has not reached one yet. */
+  protected get activeCheckpoint(): { x: number; y: number; z: number } | null {
+    return this.checkpoints.find((c) => c.active) ?? null;
+  }
+
   protected coin(x: number, y: number, z: number): void {
     const c = makeCoin();
     c.position.set(x, y + 0.75, z);
@@ -205,6 +235,11 @@ export abstract class StageBase {
   update(dt: number): void {
     this.time += dt;
     for (const u of this.updatables) u.userData.update!(dt, this.time);
+    for (const m of this.movers) {
+      const [x, top, z] = m.path(this.time);
+      this.game.physics.moveTo(m.collider, x, top, z);
+      m.mesh.position.set(x, top + m.meshDY, z);
+    }
 
     const b = this.game.body;
     // Collectibles.
@@ -237,7 +272,7 @@ export abstract class StageBase {
     }
     // Falls.
     if (!this.game.busy) {
-      if (this.waterLevel !== null && b.y < this.waterLevel - 0.25) this.game.fell('water');
+      if (this.waterLevel !== null && b.y < this.waterLevel - 0.25) this.game.fell(this.pitKind);
       else if (b.y < this.voidLevel) this.game.fell('void');
     }
     if (!this.finished) this.tick(dt);

@@ -60,9 +60,9 @@ export class PhysicsWorld {
   /** Move a collider and remember the delta so riders are carried along. */
   moveTo(c: Collider, x: number, top: number, z: number): void {
     const height = c.top - c.bottom;
-    c.dx = x - c.x;
-    c.dz = z - c.z;
-    c.dy = top - c.top;
+    c.dx += x - c.x;
+    c.dz += z - c.z;
+    c.dy += top - c.top;
     c.x = x;
     c.z = z;
     c.top = top;

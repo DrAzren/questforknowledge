@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { additionQuestion, type ChoiceQuestion } from '../../edu/questions';
+import { spokenAdditionQuestion, type ChoiceQuestion } from '../../edu/questions';
 import { discCollider, type Collider } from '../../engine/Physics';
 import {
   makeCrocodile, makeGoalArch, makeRock, makeSign, makeStone, makeWater, makeWaterfall, mat, rng, shadow,
@@ -85,10 +85,9 @@ export class NumberRiverStage extends JungleStage {
     this.add(fall);
 
     // --- Question rows ---
-    const sums = [5, 7, 10];
     const zones: [number, number][] = [[-6, 2.5], [-14.2, -11], [-22.2, -19]];
     ROW_Z.forEach((z, r) => {
-      const q = additionQuestion(this.game.rand, sums[r]);
+      const q = spokenAdditionQuestion(this.game.rand, r);
       const stones: Stone[] = q.options.map((value, i) => {
         const mesh = makeStone(STONE_R, String(value));
         mesh.position.set(STONE_X[i], 0, z);
@@ -201,7 +200,7 @@ export class NumberRiverStage extends JungleStage {
       this.activeRow = active;
       if (active >= 0) {
         const q = this.rows[active].question;
-        this.game.showQuestion(q.prompt, q.detail);
+        this.game.showQuestion(q.prompt, q.detail, q.voice);
       } else {
         this.game.hideQuestion();
       }

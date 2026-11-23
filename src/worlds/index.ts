@@ -1,3 +1,7 @@
+import { ColourCarpetsStage } from './desert/ColourCarpets';
+import { DesertCountingStage } from './desert/DesertCounting';
+import { DESERT_THEME } from './desert/DesertStage';
+import { ShapeGatesStage } from './desert/ShapeGates';
 import { JUNGLE_THEME } from './jungle/JungleStage';
 import { JungleTreasureStage } from './jungle/JungleTreasure';
 import { MissingAlphabetStage } from './jungle/MissingAlphabet';
@@ -5,7 +9,7 @@ import { NumberRiverStage } from './jungle/NumberRiver';
 import type { WorldDef } from './Stage';
 
 /**
- * The five worlds. World 1 is fully playable; worlds 2-5 are listed so the
+ * The five worlds. Worlds 1 and 2 are fully playable; worlds 3-5 are listed so the
  * world map and unlock chain are real, and each becomes playable by adding its
  * stages here (they reuse the same engine, HUD, audio and question systems).
  */
@@ -17,6 +21,7 @@ export const WORLDS: WorldDef[] = [
     tagline: 'Nombor, huruf dan harta karun',
     emoji: '🌴',
     badge: { id: 'jungle-explorer', name: 'Lencana Peneroka Hutan', emoji: '🏅' },
+    introLine: { text: 'Wah! Cantiknya hutan ni! Jom kita teroka!', voice: 'intro_jungle' },
     theme: JUNGLE_THEME,
     available: true,
     stages: [
@@ -26,9 +31,20 @@ export const WORLDS: WorldDef[] = [
     ],
   },
   {
-    id: 'desert', index: 1, name: 'Gurun Penemuan', tagline: 'Bentuk, warna dan mengira', emoji: '🏜️',
+    id: 'desert',
+    index: 1,
+    name: 'Gurun Penemuan',
+    tagline: 'Bentuk, warna dan mengira',
+    emoji: '🏜️',
     badge: { id: 'desert-explorer', name: 'Lencana Peneroka Gurun', emoji: '🏅' },
-    theme: JUNGLE_THEME, available: false, stages: [],
+    introLine: { text: 'Wah! Luasnya gurun ni! Jom cari harta karun!', voice: 'intro_desert' },
+    theme: DESERT_THEME,
+    available: true,
+    stages: [
+      { id: 'desert-1', name: 'Pintu Bentuk', hint: 'Lompat ke bentuk yang betul untuk membuka pintu!', create: (g) => new ShapeGatesStage(g) },
+      { id: 'desert-2', name: 'Permaidani Warna', hint: 'Naik permaidani dengan warna yang betul!', create: (g) => new ColourCarpetsStage(g) },
+      { id: 'desert-3', name: 'Kira di Gurun', hint: 'Kira dan lompat ke gendang dengan nombor yang betul!', create: (g) => new DesertCountingStage(g) },
+    ],
   },
   {
     id: 'school', index: 2, name: 'Sekolah Ajaib', tagline: 'Abjad, perkataan dan haiwan', emoji: '🏫',

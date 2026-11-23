@@ -209,7 +209,7 @@ export class MissingAlphabetStage extends JungleStage {
       this.activeRound = active;
       if (active >= 0) {
         const q = this.rounds[active].question;
-        this.game.showQuestion(q.prompt, q.detail);
+        this.game.showQuestion(q.prompt, q.detail, q.voice);
       } else {
         this.game.hideQuestion();
       }

@@ -20,6 +20,8 @@ export interface HudCallbacks {
   onMuteToggle(): boolean;
   onButtonSound(): void;
   onFirstGesture(): void;
+  /** The child tapped the speaker to hear the question again. */
+  onReplayQuestion(): void;
 }
 
 type Screen = 'loading' | 'menu' | 'worlds' | 'settings' | 'pause' | 'complete' | 'none';
@@ -57,6 +59,12 @@ export class Hud {
     click('btn-quit', () => this.cb.onQuitToMenu());
     click('btn-next', () => this.cb.onNextStage());
     click('btn-complete-menu', () => this.cb.onGoWorlds());
+    for (const id of ['q-replay', 'quiz-replay']) {
+      el(id).addEventListener('click', () => {
+        this.cb.onFirstGesture();
+        this.cb.onReplayQuestion();
+      });
+    }
     click('btn-mute', () => {
       const muted = this.cb.onMuteToggle();
       el('btn-mute').textContent = muted ? '🔇 Bunyi: Tutup' : '🔊 Bunyi: Buka';
@@ -325,7 +333,10 @@ const TEMPLATE = `
     <div class="counter"><span>🪙</span><b id="count-coins">0</b></div>
     <button id="btn-pause" class="round-btn" aria-label="Jeda">⏸</button>
   </div>
-  <div id="question"><div id="q-prompt"></div><div id="q-detail"></div></div>
+  <div id="question">
+    <button id="q-replay" class="replay-btn" aria-label="Dengar soalan sekali lagi">🔊</button>
+    <div id="q-text"><div id="q-prompt"></div><div id="q-detail"></div></div>
+  </div>
   <div id="bubble"><span class="bubble-face">🧒</span><span id="bubble-text"></span></div>
 </div>
 <div id="toast"></div>
@@ -333,7 +344,7 @@ const TEMPLATE = `
 
 <div id="quiz">
   <div class="quiz-box">
-    <div id="quiz-prompt"></div>
+    <div class="quiz-head"><button id="quiz-replay" class="replay-btn" aria-label="Dengar soalan sekali lagi">🔊</button><div id="quiz-prompt"></div></div>
     <div id="quiz-detail"></div>
     <div id="quiz-options"></div>
   </div>

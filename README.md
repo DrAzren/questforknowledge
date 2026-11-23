@@ -13,13 +13,17 @@ It runs in a desktop or mobile browser. Nothing to install for players.
 | World | Stages | State |
 |---|---|---|
 | 1. Hutan Misteri (Jungle) | Sungai Nombor · Huruf Yang Hilang · Harta Karun Hutan | Playable |
-| 2. Gurun Penemuan (Desert) | Shapes · Colours · Counting | Designed, not built |
+| 2. Gurun Penemuan (Desert) | Pintu Bentuk · Permaidani Warna · Kira di Gurun | Playable |
 | 3. Sekolah Ajaib (School) | Upper/lower case · Word builder · Animals | Designed, not built |
 | 4. Cabaran Gunung Berapi (Volcano) | Addition · Subtraction · Sequences | Designed, not built |
 | 5. Kerajaan Beku (Snow) | Mixed challenges · Snow Guardian finale | Designed, not built |
 
-Worlds 2–5 appear on the world map as locked or "Akan datang!" and unlock in
+Worlds 3–5 appear on the world map as locked or "Akan datang!" and unlock in
 order.
+
+Every question is read aloud by a narrator when it appears, and the speaker
+button on the question panel (or the R key) repeats it. Praise and
+encouragement are spoken with the same words that appear on screen.
 
 Affan is a generated, rigged model (`public/assets/models/affan.glb`, about
 1.7 MB) with ten animation clips. A simple built-in body shows for the moment
@@ -45,7 +49,7 @@ npm run build
 
 | | Move | Jump | Run | Pause | Answer buttons |
 |---|---|---|---|---|---|
-| Keyboard | W A S D or arrows | Space | Shift | Esc or P | 1 2 3 |
+| Keyboard | W A S D or arrows | Space | Shift | Esc or P | 1 2 3 (R repeats the question) |
 | Touch | Joystick | ⬆ button | 🏃 toggle | ⏸ | Tap |
 
 ## How it is built
@@ -83,8 +87,8 @@ npm run build && npx vite preview --port 4173
 npm run test:e2e
 ```
 
-The end-to-end run plays all three jungle stages through the real input layer
-in a headless browser (wrong answers, falls, checkpoints, rewards, the quiz,
+The end-to-end run plays all six jungle and desert stages through the real
+input layer in a headless browser (wrong answers, falls, checkpoints, rewards, the quiz,
 saving, unlocking) and then checks touch controls, audio playback and render
 cost on a phone-sized screen. Screenshots land in `tests/e2e/output`.
 
@@ -106,5 +110,7 @@ Higgsfield account that generated them.
 
 Music and sound effects were generated for this project with Higgsfield
 (ElevenLabs Music and Mirelo SFX); Affan's voice lines with ElevenLabs,
-using the project owner's own "Affan Clone" voice. The button click is
+using the project owner's own "Affan Clone" voice, and the narrator's
+questions and feedback with the library voice "Zain – Gentle Kids Story
+Narrator". The button click is
 synthesised in the browser. Any missing sound falls back to a synthesised one.

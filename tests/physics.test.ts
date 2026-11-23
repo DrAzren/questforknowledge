@@ -112,6 +112,8 @@ describe('character controller', () => {
     for (let i = 0; i < 240; i++) {
       world.moveTo(plat, plat.x + 0.01, plat.top, plat.z);
       body.step(DT, idle);
+      // The game clears each collider's pending movement once a physics step has used it.
+      plat.dx = plat.dy = plat.dz = 0;
     }
     expect(body.grounded).toBe(true);
     expect(body.x).toBeCloseTo(plat.x, 1);

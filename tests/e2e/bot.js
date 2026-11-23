@@ -39,9 +39,28 @@ window.bot = (() => {
     if (g.mode === 'play' && !g._busy) walkTo(tx, tz, { max: 90, hop: false });
     return g.debugState();
   };
+  // Jump onto a (possibly moving) collider, steering toward wherever it is each frame.
+  const jumpOnto = (c) => {
+    steer(c.x, c.z);
+    g.input.setKey('jump', true);
+    step(2);
+    let i = 0;
+    while (i++ < 150) { steer(c.x, c.z); step(); if (g.body.grounded && i > 6) break; if (g.mode !== 'play' || g._busy) break; }
+    release(); step(2);
+    let k = 0;
+    while (k++ < 50 && g.body.ground === c && steer(c.x, c.z) > 0.35) step();
+    release(); step(2);
+    return g.body.ground === c;
+  };
+  // Walk toward a point given relative to a moving collider.
+  const walkOn = (c, dx, dz, max = 60) => {
+    let i = 0;
+    while (i++ < max && steer(c.x + dx, c.z + dz) > 0.25) step();
+    release(); step(1);
+  };
   const untilMode = (mode, max = 1200) => { let i = 0; while (g.mode !== mode && i++ < max) step(); return g.mode === mode; };
   const until = (fn, max = 600) => { let i = 0; while (!fn() && i++ < max) step(); return !!fn(); };
   const render = () => g.renderer.render(g.scene, g.camera);
   const freeze = () => g.renderer.setAnimationLoop(null);
-  return { g, step, walkTo, jumpTo, untilMode, until, release, render, freeze };
+  return { g, step, walkTo, jumpTo, jumpOnto, walkOn, untilMode, until, release, render, freeze };
 })();

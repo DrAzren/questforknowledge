@@ -11,6 +11,8 @@ export interface ChoiceQuestion<T extends string | number = string | number> {
   answer: T;
   /** Shuffled options, always containing the answer exactly once. */
   options: T[];
+  /** Name of the narration clip that reads this question aloud, if one exists. */
+  voice?: string;
 }
 
 export type Rand = () => number;
@@ -49,6 +51,30 @@ export function additionQuestion(rand: Rand, maxSum: number, optionCount = 3): C
     detail: `${a} + ${b} = ?`,
     answer: sum,
     options: numberOptions(rand, sum, optionCount, 1, 12),
+  };
+}
+
+/**
+ * Addition questions that have a recorded narration, grouped by difficulty
+ * (sums up to 5, up to 7, up to 10). Drawing from a fixed pool is what lets
+ * every question be spoken with a natural, pre-recorded voice.
+ */
+export const ADDITION_POOL: [number, number][][] = [
+  [[2, 1], [1, 3], [2, 2], [3, 2], [1, 4], [2, 3]],
+  [[3, 3], [4, 2], [5, 1], [4, 3], [2, 5], [6, 1]],
+  [[4, 4], [5, 3], [6, 2], [5, 4], [7, 2], [5, 5], [6, 4], [3, 6]],
+];
+
+/** A spoken addition question from tier 0 (easiest) to 2. */
+export function spokenAdditionQuestion(rand: Rand, tier: number, optionCount = 3): ChoiceQuestion<number> {
+  const pool = ADDITION_POOL[Math.max(0, Math.min(ADDITION_POOL.length - 1, tier))];
+  const [a, b] = pool[Math.floor(rand() * pool.length)];
+  return {
+    prompt: `Affan, berapakah ${a} + ${b}?`,
+    detail: `${a} + ${b} = ?`,
+    answer: a + b,
+    options: numberOptions(rand, a + b, optionCount, 1, 12),
+    voice: `q_add_${a}_${b}`,
   };
 }
 
@@ -97,6 +123,7 @@ export function missingLetterQuestion(rand: Rand, maxStart = 21, optionCount = 3
     detail: shown.join('  '),
     answer,
     options: shuffle(rand, [answer, ...picks]),
+    voice: 'q_huruf_hilang',
     sequence,
     missingIndex,
   };
@@ -125,11 +152,31 @@ export function countQuestion(rand: Rand, max = 10, emoji = '⭐', noun = 'binta
     detail: Array.from({ length: n }, () => emoji).join(' '),
     answer: n,
     options: numberOptions(rand, n, optionCount, 1, 20),
+    voice: noun === 'bintang' ? 'q_kira_bintang' : undefined,
   };
 }
 
-export const PRAISE = ['Bagus Affan!', 'Hebatnya!', 'Betul!', 'Wah, hebat!', 'Pandainya Affan!'];
-export const ENCOURAGE = ['Cuba lagi, Affan!', 'Tak mengapa, kita belajar sama-sama!', 'Oops! Cuba lagi!', 'Hampir betul! Cuba sekali lagi!'];
+/** Feedback lines with the voice clip that says exactly those words (n_ = narrator, others = Affan). */
+export const PRAISE_LINES: { text: string; voice: string }[] = [
+  { text: 'Bagus Affan!', voice: 'n_bagus' },
+  { text: 'Hebatnya!', voice: 'n_hebatnya' },
+  { text: 'Pandainya Affan!', voice: 'n_pandainya' },
+  { text: 'Betul!', voice: 'betul' },
+  { text: 'Wah, hebat!', voice: 'wah_hebat' },
+];
+export const ENCOURAGE_LINES: { text: string; voice: string }[] = [
+  { text: 'Cuba lagi, Affan!', voice: 'n_cuba_lagi' },
+  { text: 'Tak mengapa, kita belajar sama-sama!', voice: 'n_tak_mengapa' },
+  { text: 'Hampir betul! Cuba sekali lagi!', voice: 'n_hampir' },
+  { text: 'Oops! Cuba lagi!', voice: 'oops_cuba_lagi' },
+];
+export const PRAISE = PRAISE_LINES.map((l) => l.text);
+export const ENCOURAGE = ENCOURAGE_LINES.map((l) => l.text);
+
+/** Exported for tests and stages that need the same near-miss distractors. */
+export function numberChoices(rand: Rand, answer: number, count: number, min: number, max: number): number[] {
+  return numberOptions(rand, answer, count, min, max);
+}
 
 export function pick<T>(rand: Rand, items: T[]): T {
   return items[Math.floor(rand() * items.length)];

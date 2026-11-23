@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { Affan, type Emote } from '../character/Affan';
-import { ENCOURAGE, PRAISE, pick, type ChoiceQuestion } from '../edu/questions';
+import { ENCOURAGE_LINES, PRAISE_LINES, pick, type ChoiceQuestion } from '../edu/questions';
 import { makeSky, Sparkles } from '../env/builders';
 import { Hud } from '../ui/Hud';
 import { WORLDS } from '../worlds';
@@ -58,6 +58,8 @@ export class Game implements GameApi {
   private frameTimes: number[] = [];
   private pixelRatio = 1;
   private lastPraise = '';
+  /** Narration clip for the question currently on screen. */
+  private questionVoice: string | null = null;
   /** Frames rendered, for automated tests. */
   frames = 0;
 
@@ -110,9 +112,11 @@ export class Game implements GameApi {
       },
       onButtonSound: () => this.audio.sfx('button'),
       onFirstGesture: () => this.unlockAudio(),
+      onReplayQuestion: () => this.replayQuestion(),
     });
     this.hud.setAudioControls(this.save.audio);
     this.input.onNumberKey = (n) => this.hud.answer(n - 1);
+    this.input.onReplayKey = () => this.replayQuestion();
     this.input.onPauseKey = () => {
       if (this.mode === 'play') this.setPaused(true);
       else if (this.mode === 'paused') this.setPaused(false);
@@ -271,8 +275,9 @@ export class Game implements GameApi {
     this.body.active = true;
     const s = this.stage!.spawn;
     this.snapCamera(s);
-    if (fromIntro && this.stageIndex === 0) {
-      this.say('Wah! Cantiknya hutan ni! Jom kita teroka!', { voice: 'intro_jungle', emote: 'wave', duration: 3.6 });
+    const line = this.world.introLine;
+    if (fromIntro && this.stageIndex === 0 && line) {
+      this.say(line.text, { voice: line.voice, emote: 'wave', duration: 3.6 });
     } else {
       this.say('Jom!', { voice: 'jom', emote: 'celebrate', duration: 1.4 });
     }
@@ -319,19 +324,21 @@ export class Game implements GameApi {
   }
 
   praise(at?: THREE.Vector3): void {
-    let text = pick(Math.random, PRAISE);
-    if (text === this.lastPraise) text = pick(Math.random, PRAISE);
-    this.lastPraise = text;
+    let line = pick(Math.random, PRAISE_LINES);
+    if (line.text === this.lastPraise) line = pick(Math.random, PRAISE_LINES);
+    this.lastPraise = line.text;
     this.audio.sfx('correct');
-    this.hud.toast(text, 'good');
+    this.hud.toast(line.text, 'good');
     this.affan.play('celebrate', 1.4);
-    void this.audio.voice(pick(Math.random, ['betul', 'wah_hebat', 'yeay']));
+    // The spoken words are the same as the words on screen.
+    void this.audio.voice(line.voice);
     if (at) this.sparkles.burst(at, 30);
   }
 
   encourage(): void {
-    this.hud.toast(pick(Math.random, ENCOURAGE), 'soft');
-    void this.audio.voice('oops_cuba_lagi');
+    const line = pick(Math.random, ENCOURAGE_LINES);
+    this.hud.toast(line.text, 'soft');
+    void this.audio.voice(line.voice);
   }
 
   say(text: string, opts: { voice?: string; emote?: Emote; duration?: number } = {}): void {
@@ -341,12 +348,21 @@ export class Game implements GameApi {
     if (opts.voice) void this.audio.voice(opts.voice);
   }
 
-  showQuestion(prompt: string, detail?: string): void {
+  showQuestion(prompt: string, detail?: string, voice?: string): void {
     this.hud.showQuestion(prompt, detail);
+    // Read a new question aloud once; progress updates to the same question stay quiet.
+    if (voice && voice !== this.questionVoice) void this.audio.voice(voice, { queue: true });
+    this.questionVoice = voice ?? null;
   }
 
   hideQuestion(): void {
     this.hud.hideQuestion();
+    this.questionVoice = null;
+  }
+
+  /** The speaker button (or R): hear the current question again. */
+  private replayQuestion(): void {
+    if (this.questionVoice && this.mode === 'play') void this.audio.voice(this.questionVoice);
   }
 
   setTask(text: string | null): void {
@@ -369,6 +385,8 @@ export class Game implements GameApi {
     this.body.active = false;
     this.affan.play('think', 60);
     this.input.setTouchVisible(false);
+    this.questionVoice = q.voice ?? null;
+    if (q.voice) void this.audio.voice(q.voice, { queue: true });
     return this.hud
       .quiz(
         q,
@@ -384,11 +402,12 @@ export class Game implements GameApi {
       .then(() => {
         this._busy = false;
         this.body.active = true;
+        this.questionVoice = null;
         this.input.setTouchVisible(this.input.isTouch);
       });
   }
 
-  fell(kind: 'water' | 'void'): void {
+  fell(kind: 'water' | 'sand' | 'void'): void {
     if (this._busy) return;
     this._busy = true;
     this.body.active = false;
@@ -396,6 +415,9 @@ export class Game implements GameApi {
     if (kind === 'water') {
       this.audio.sfx('splash');
       this.sparkles.burst(at, 46, [0xffffff, 0xa5d8ff, 0x74c0fc], 5.5);
+    } else if (kind === 'sand') {
+      this.audio.sfx('sand_sink');
+      this.sparkles.burst(at, 40, [0xf4d58d, 0xe9c46a, 0xfff3bf], 4);
     }
     this.affan.play('surprised', 1);
     this.hearts = Math.max(0, this.hearts - 1);
@@ -413,8 +435,7 @@ export class Game implements GameApi {
       this.body.active = true;
       this._busy = false;
       this.facing = Math.PI;
-      this.hud.toast(pick(Math.random, ENCOURAGE), 'soft');
-      void this.audio.voice('oops_cuba_lagi');
+      this.encourage();
       this.affan.play('none');
     });
   }
@@ -629,6 +650,7 @@ export class Game implements GameApi {
       animation: this.affan.animation,
       model: this.affan.usingModel,
       question: this.hud.questionText,
+      questionVoice: this.questionVoice,
       screen: this.hud.current,
       music: this.audio.currentMusic,
       musicPlaying: this.audio.musicPlaying,

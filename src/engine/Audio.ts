@@ -17,10 +17,11 @@ const BASE = `${import.meta.env.BASE_URL}assets/audio/`;
 export const SFX_FILES = [
   'step_grass', 'jump', 'land', 'coin', 'star', 'correct', 'wrong', 'splash',
   'croc', 'achievement', 'level_complete', 'stone_sink',
+  'step_sand', 'stone_door', 'carpet', 'sand_sink', 'bump',
 ] as const;
 /** Sounds that are always synthesised (no audio file). */
 const SYNTH_ONLY = new Set(['button']);
-export const LOOP_FILES = ['waterfall', 'jungle_amb'] as const;
+export const LOOP_FILES = ['waterfall', 'jungle_amb', 'wind'] as const;
 
 interface LoopHandle {
   gain: GainNode;
@@ -139,12 +140,28 @@ export class AudioManager {
     src.start();
   }
 
-  /** Play a voice line; music ducks while it plays. Returns its duration in seconds (0 if unavailable). */
-  async voice(name: string): Promise<number> {
+  private voiceEndsAt = 0;
+  private voiceToken = 0;
+
+  /**
+   * Play a voice line; music ducks while it plays. Returns its duration in seconds (0 if unavailable).
+   * With `queue`, the line waits for whoever is speaking to finish (used for
+   * question narration, so it never cuts Affan off); otherwise it interrupts.
+   */
+  async voice(name: string, opts: { queue?: boolean } = {}): Promise<number> {
     this.log.push(`voice:${name}`);
     if (!this.ctx) return 0;
+    const token = ++this.voiceToken;
     const buf = await this.load(`voice/${name}.mp3`);
     if (!buf || !this.ctx) return 0;
+    if (opts.queue) {
+      const wait = this.voiceEndsAt - this.ctx.currentTime;
+      if (wait > 0) {
+        await new Promise((resolve) => setTimeout(resolve, (wait + 0.2) * 1000));
+        // Something newer was requested while waiting: let that one speak instead.
+        if (token !== this.voiceToken || !this.ctx) return 0;
+      }
+    }
     if (this.voiceSource) {
       try { this.voiceSource.stop(); } catch { /* already stopped */ }
     }
@@ -156,6 +173,7 @@ export class AudioManager {
     this.musicDuck.gain.setTargetAtTime(0.35, t, 0.08);
     this.musicDuck.gain.setTargetAtTime(1, t + buf.duration, 0.25);
     src.start();
+    this.voiceEndsAt = t + buf.duration;
     this.voiceSource = src;
     src.onended = () => {
       if (this.voiceSource === src) this.voiceSource = null;
@@ -307,6 +325,11 @@ export class AudioManager {
       case 'jump': this.tone(320, 0, 0.18, 'sine', 0.25 * v, 720); break;
       case 'land': this.noise(0, 0.1, 0.25 * v, 500); break;
       case 'step_grass': this.noise(0, 0.05, 0.08 * v, 900); break;
+      case 'step_sand': this.noise(0, 0.07, 0.07 * v, 600); break;
+      case 'stone_door': this.noise(0, 0.9, 0.3 * v, 300); this.tone(70, 0, 0.9, 'sawtooth', 0.08 * v, 50); break;
+      case 'carpet': this.noise(0, 0.6, 0.18 * v, 2400); this.tone(500, 0, 0.5, 'sine', 0.1 * v, 900); break;
+      case 'sand_sink': this.noise(0, 0.7, 0.3 * v, 700); break;
+      case 'bump': this.tone(160, 0, 0.18, 'sine', 0.3 * v, 90); break;
       case 'coin': this.tone(1320, 0, 0.09, 'square', 0.1 * v); this.tone(1760, 0.07, 0.16, 'square', 0.1 * v); break;
       case 'star': [880, 1108, 1320, 1760].forEach((f, i) => this.tone(f, i * 0.06, 0.2, 'triangle', 0.18 * v)); break;
       case 'correct': [523, 659, 784, 1047].forEach((f, i) => this.tone(f, i * 0.09, 0.22, 'triangle', 0.22 * v)); break;
