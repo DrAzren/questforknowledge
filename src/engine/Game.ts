@@ -144,7 +144,8 @@ export class Game implements GameApi {
 
   start(): void {
     // The generated model streams in behind the menu; the built-in body covers until then.
-    void this.affan.loadModel(`${import.meta.env.BASE_URL}assets/models/affan.glb`);
+    const modelFile = import.meta.env.VITE_MODEL_AS_TEXT ? 'affan.glb.txt' : 'affan.glb';
+    void this.affan.loadModel(`${import.meta.env.BASE_URL}assets/models/${modelFile}`);
     this.toMenu();
     this.renderer.setAnimationLoop(() => this.frame());
   }

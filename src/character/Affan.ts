@@ -601,7 +601,16 @@ export class Affan {
       ]);
       const loader = new GLTFLoader();
       loader.setMeshoptDecoder(MeshoptDecoder);
-      const gltf = await loader.loadAsync(url);
+      let gltf;
+      if (url.endsWith('.txt')) {
+        // Some static hosts only serve text and media types, so the model may ship as base64 text.
+        const res = await fetch(url);
+        if (!res.ok) throw new Error(`model fetch failed: ${res.status}`);
+        const bytes = Uint8Array.from(atob((await res.text()).trim()), (c) => c.charCodeAt(0));
+        gltf = await loader.parseAsync(bytes.buffer, '');
+      } else {
+        gltf = await loader.loadAsync(url);
+      }
       const scene = gltf.scene;
       let head: THREE.Object3D | null = null;
       let spine: THREE.Object3D | null = null;

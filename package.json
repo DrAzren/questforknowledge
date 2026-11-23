@@ -9,7 +9,8 @@
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
     "test": "vitest run",
-    "test:e2e": "node tests/e2e/play.cjs && node tests/e2e/realtime.cjs"
+    "test:e2e": "node tests/e2e/play.cjs && node tests/e2e/realtime.cjs",
+    "build:text-model": "VITE_MODEL_AS_TEXT=1 vite build --outDir dist-text && node -e \"const fs=require('fs');const d='dist-text/assets/models/';fs.writeFileSync(d+'affan.glb.txt',fs.readFileSync(d+'affan.glb').toString('base64'));fs.rmSync(d+'affan.glb')\""
   },
   "dependencies": {
     "three": "^0.170.0"
