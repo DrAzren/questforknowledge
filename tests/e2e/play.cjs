@@ -16,6 +16,10 @@ const shot = async (page, file) => { await page.evaluate(() => window.bot.render
   const ev = (fn, arg) => page.evaluate(fn, arg);
 
   // ---------- Menu ----------
+  const modelOk = await page.waitForFunction(() => window.__game.affan.usingModel, null, { timeout: 30000 }).then(() => true, () => false);
+  check('generated Affan model loads and replaces the built-in body', modelOk);
+  const clips = await page.evaluate(() => [...window.__game.affan.model.actions.keys()].sort());
+  check('model carries all ten animation clips', ['celebrate', 'fall', 'idle', 'jump', 'run', 'surprised', 'think', 'victory', 'walk', 'wave'].every((c) => clips.includes(c)), clips.join(','));
   let s = await state(page);
   check('menu shown on boot', s.mode === 'menu' && s.screen === 'menu');
   check('Play label is "Main" on a fresh save', (await page.textContent('#btn-play')).includes('Main'));
@@ -93,6 +97,7 @@ const shot = async (page, file) => { await page.evaluate(() => window.bot.render
     const before = (await state(page)).stars;
     s = await ev(([x, z]) => window.bot.jumpTo(x, z), [right.x, right.z]);
     check(`row ${r + 1}: correct stone holds and awards a star`, s.stars === before + 1 && s.grounded && Math.abs(s.y) < 0.1, `stars=${s.stars} y=${s.y.toFixed(2)}`);
+    if (r === 0) check('model plays the celebrate clip', await ev(() => window.bot.g.affan.modelClip === 'celebrate'));
     if (r === 0) { check('correct sound + praise', await ev(() => window.bot.g.audio.log.includes('sfx:correct'))); check('celebrate animation', s.animation === 'celebrate', s.animation); await shot(page, 's1_correct.png'); }
     await ev(([x, z]) => window.bot.walkTo(x, z - 0.6, { hop: false }), [right.x, right.z]);
     s = await ev(([x, z]) => window.bot.jumpTo(x, z), [right.x, landZ[r]]);
@@ -109,6 +114,7 @@ const shot = async (page, file) => { await page.evaluate(() => window.bot.render
   s = await state(page);
   check('coins collected and counted', s.coins >= 4, `coins=${s.coins}`);
   check('reaching the arch completes the stage', s.mode === 'complete', s.mode);
+  check('model plays the victory clip', await ev(() => { window.bot.step(5); return window.bot.g.affan.modelClip === 'victory'; }));
   check('victory animation + level complete sound', s.animation === 'victory' && await ev(() => window.bot.g.audio.log.includes('sfx:level_complete')));
   await ev(() => window.bot.step(200));
   s = await state(page);

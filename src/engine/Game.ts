@@ -143,6 +143,8 @@ export class Game implements GameApi {
   // ---- Boot & flow ----------------------------------------------------------------
 
   start(): void {
+    // The generated model streams in behind the menu; the built-in body covers until then.
+    void this.affan.loadModel(`${import.meta.env.BASE_URL}assets/models/affan.glb`);
     this.toMenu();
     this.renderer.setAnimationLoop(() => this.frame());
   }
@@ -624,6 +626,7 @@ export class Game implements GameApi {
       coins: this.stageCoins,
       busy: this._busy,
       animation: this.affan.animation,
+      model: this.affan.usingModel,
       question: this.hud.questionText,
       screen: this.hud.current,
       music: this.audio.currentMusic,

@@ -19,8 +19,11 @@ It runs in a desktop or mobile browser. Nothing to install for players.
 | 5. Kerajaan Beku (Snow) | Mixed challenges · Snow Guardian finale | Designed, not built |
 
 Worlds 2–5 appear on the world map as locked or "Akan datang!" and unlock in
-order. Affan is currently a hand-built placeholder model matched to the
-reference; a generated, rigged model replaces it once the turnaround is approved.
+order.
+
+Affan is a generated, rigged model (`public/assets/models/affan.glb`, about
+1.7 MB) with ten animation clips. A simple built-in body shows for the moment
+before it loads, and stays if the file cannot be fetched.
 
 ## Run it
 
@@ -85,9 +88,23 @@ in a headless browser (wrong answers, falls, checkpoints, rewards, the quiz,
 saving, unlocking) and then checks touch controls, audio playback and render
 cost on a phone-sized screen. Screenshots land in `tests/e2e/output`.
 
+## Affan's model
+
+The model and each animation clip were generated with Higgsfield (Meshy) from
+the approved turnaround. Each clip arrives on its own slightly different
+skeleton, so `tools/build-affan.mjs` retargets every clip onto the base
+skeleton, removes root motion, shrinks the textures and compresses the mesh:
+
+```bash
+node tools/build-affan.mjs <folder with base.glb and one .glb per clip>
+```
+
+The 11 MB source files are not kept in the repository; they remain in the
+Higgsfield account that generated them.
+
 ## Audio
 
 Music and sound effects were generated for this project with Higgsfield
-(ElevenLabs Music and Mirelo SFX); Affan's voice lines with ElevenLabs
-(library voice "Hafiz – Energetic Cartoon Character"). The button click is
+(ElevenLabs Music and Mirelo SFX); Affan's voice lines with ElevenLabs,
+using the project owner's own "Affan Clone" voice. The button click is
 synthesised in the browser. Any missing sound falls back to a synthesised one.

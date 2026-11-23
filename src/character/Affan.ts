@@ -36,6 +36,17 @@ const C = {
   blue: 0x2f7fe0,
 };
 
+/** Ground speed (world units per second) at which each clip's feet match the floor at normal playback. */
+const WALK_CLIP_SPEED = 1.8;
+const RUN_CLIP_SPEED = 4.7;
+/** Below this ground speed Affan strolls (walk clip); above it he jogs or runs (run clip). */
+const JOG_FROM = 2.6;
+/** Fraction of the jump clip to skip (its crouch) and its playback rate, tuned to the game's 0.75 s jump. */
+const JUMP_START = 0.3;
+const JUMP_RATE = 0.7;
+/** The fall clip is a full skydive pose, so it is kept for long drops only. */
+const LONG_FALL_SPEED = -9.5;
+
 interface Pose {
   armLx: number; armLz: number;
   armRx: number; armRz: number;
@@ -250,6 +261,20 @@ export class Affan {
   /** Fires on each footfall so the game can play a step sound. */
   onStep: (() => void) | null = null;
   private lastStepSide = 0;
+
+  /** The generated, rigged model. While it is absent (loading or failed) the hand-built body is shown. */
+  private model: {
+    container: THREE.Group;
+    mixer: THREE.AnimationMixer;
+    actions: Map<string, THREE.AnimationAction>;
+    head: THREE.Object3D | null;
+    spine: THREE.Object3D | null;
+    scale: number;
+  } | null = null;
+  private modelClip = '';
+  private modelAction: THREE.AnimationAction | null = null;
+  /** Height the model is scaled to, in world units. */
+  static readonly MODEL_HEIGHT = 1.3;
 
   constructor() {
     this.build();
@@ -558,6 +583,133 @@ export class Affan {
     this.head.add(glasses);
   }
 
+  // ---- Generated model ---------------------------------------------------------
+
+  get usingModel(): boolean {
+    return this.model !== null;
+  }
+
+  /**
+   * Load the rigged GLB and switch to it. Resolves false (keeping the
+   * hand-built body) if the file is missing or cannot be read.
+   */
+  async loadModel(url: string): Promise<boolean> {
+    try {
+      const [{ GLTFLoader }, { MeshoptDecoder }] = await Promise.all([
+        import('three/examples/jsm/loaders/GLTFLoader.js'),
+        import('three/examples/jsm/libs/meshopt_decoder.module.js'),
+      ]);
+      const loader = new GLTFLoader();
+      loader.setMeshoptDecoder(MeshoptDecoder);
+      const gltf = await loader.loadAsync(url);
+      const scene = gltf.scene;
+      let head: THREE.Object3D | null = null;
+      let spine: THREE.Object3D | null = null;
+      scene.traverse((o) => {
+        const mesh = o as THREE.SkinnedMesh;
+        if (mesh.isMesh) {
+          mesh.castShadow = true;
+          mesh.receiveShadow = false;
+          // Skinned bounds are unreliable; Affan is always on screen anyway.
+          mesh.frustumCulled = false;
+          for (const m of Array.isArray(mesh.material) ? mesh.material : [mesh.material]) {
+            const std = m as THREE.MeshStandardMaterial;
+            // No environment map in the scene, so metal would render black: keep it a soft, matte toy.
+            std.metalness = 0;
+            std.metalnessMap = null;
+            std.roughness = Math.max(std.roughness, 0.7);
+            // A touch of self-light keeps his face and colours bright in shade, like the reference art.
+            std.emissive.set(0xffffff);
+            std.emissiveMap = std.map;
+            std.emissiveIntensity = 0.2;
+            std.needsUpdate = true;
+          }
+        }
+        if ((o as THREE.Bone).isBone) {
+          if (!head && /^head$/i.test(o.name)) head = o;
+          if (!spine && /^spine\d*$/i.test(o.name)) spine = o;
+        }
+      });
+      // Measure the bind pose, then scale to the game's size with the feet on the ground.
+      scene.updateMatrixWorld(true);
+      const box = new THREE.Box3().setFromObject(scene);
+      const size = box.getSize(new THREE.Vector3());
+      const scale = Affan.MODEL_HEIGHT / (size.y || 1);
+      const container = new THREE.Group();
+      scene.position.set(-(box.min.x + box.max.x) / 2, -box.min.y, -(box.min.z + box.max.z) / 2);
+      container.add(scene);
+      container.scale.setScalar(scale);
+      const mixer = new THREE.AnimationMixer(scene);
+      const actions = new Map<string, THREE.AnimationAction>();
+      for (const clip of gltf.animations) actions.set(clip.name, mixer.clipAction(clip));
+      if (!actions.has('idle')) return false;
+      this.model = { container, mixer, actions, head, spine, scale };
+      this.root.add(container);
+      this.body.visible = false;
+      this.modelClip = '';
+      return true;
+    } catch (err) {
+      console.warn('Affan model not loaded, using the built-in character.', err);
+      return false;
+    }
+  }
+
+  /** Clips that play once and hold their last frame. */
+  private static readonly ONE_SHOT = new Set(['jump']);
+
+  private driveModel(name: string, dt: number, loco: LocomotionState): void {
+    const m = this.model!;
+    const wanted: Record<string, string> = {
+      idle: 'idle', land: 'idle', sad: 'idle', walk: 'walk', run: 'run', jump: 'jump', fall: 'fall',
+      celebrate: 'celebrate', victory: 'victory', think: 'think', surprised: 'surprised', wave: 'wave',
+    };
+    let clip = wanted[name] ?? 'idle';
+    if (clip === 'walk' || clip === 'run') clip = loco.speed > JOG_FROM ? 'run' : 'walk';
+    // Short drops keep the open-armed jump pose.
+    if (clip === 'fall' && loco.vy > LONG_FALL_SPEED) clip = 'jump';
+    if (!m.actions.has(clip)) clip = clip === 'run' && m.actions.has('walk') ? 'walk' : 'idle';
+    if (clip !== this.modelClip) {
+      const next = m.actions.get(clip)!;
+      next.reset();
+      next.enabled = true;
+      if (Affan.ONE_SHOT.has(clip)) {
+        next.setLoop(THREE.LoopOnce, 1);
+        next.clampWhenFinished = true;
+        // Skip the wind-up so the pose matches a jump that has already left the ground.
+        next.time = Math.min(next.getClip().duration * JUMP_START, next.getClip().duration);
+      } else {
+        next.setLoop(THREE.LoopRepeat, Infinity);
+      }
+      const fade = clip === 'jump' || this.modelClip === 'jump' || this.modelClip === 'fall' ? 0.1 : 0.2;
+      // Landing from a jump goes straight back to the same jump pose if he takes off again.
+      if (clip === 'jump' && this.modelAction === next) next.time = next.getClip().duration * JUMP_START;
+      if (this.modelAction) next.crossFadeFrom(this.modelAction, fade, false);
+      next.play();
+      this.modelAction = next;
+      this.modelClip = clip;
+    }
+    // Feet keep pace with the ground speed.
+    const action = this.modelAction!;
+    if (clip === 'walk') action.timeScale = Math.max(0.6, loco.speed / WALK_CLIP_SPEED);
+    else if (clip === 'run') action.timeScale = Math.max(0.7, loco.speed / RUN_CLIP_SPEED);
+    else if (clip === 'jump') action.timeScale = JUMP_RATE;
+    else action.timeScale = 1;
+    m.mixer.update(dt);
+
+    // Layered on top of the clip: the landing squash and the "sad" slump.
+    const sq = this.pose.squash;
+    m.container.scale.set(m.scale * (1 + (1 - sq) * 0.6), m.scale * sq, m.scale * (1 + (1 - sq) * 0.6));
+    // The startled hop comes from the pose blender; the clip supplies the body language.
+    m.container.position.y = name === 'surprised' ? this.pose.y : 0;
+    this.sadBlend += ((name === 'sad' ? 1 : 0) - this.sadBlend) * (1 - Math.exp(-dt * 8));
+    if (this.sadBlend > 0.01) {
+      if (m.head) m.head.rotation.x += 0.36 * this.sadBlend;
+      if (m.spine) m.spine.rotation.x += 0.18 * this.sadBlend;
+    }
+  }
+
+  private sadBlend = 0;
+
   // ---- Animation --------------------------------------------------------------
 
   /** Trigger a timed emote animation (celebrate, think, surprised, sad, victory, wave). */
@@ -723,6 +875,7 @@ export class Affan {
     this.head.rotation.set(p.headX, p.headY, p.headZ);
 
     this.updateFace(dt, expr);
+    if (this.model) this.driveModel(name, dt, loco);
   }
 
   private updateFace(dt: number, expr: Expression): void {
