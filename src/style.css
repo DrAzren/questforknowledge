@@ -131,7 +131,7 @@ button { font-family: var(--font); cursor: pointer; border: none; }
 
 #question {
   position: absolute;
-  top: calc(max(12px, env(safe-area-inset-top)) + 76px);
+  top: calc(max(12px, env(safe-area-inset-top)) + 58px);
   left: 50%;
   width: max-content;
   max-width: min(92vw, 760px);

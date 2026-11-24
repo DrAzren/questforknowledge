@@ -18,6 +18,8 @@ export const SFX_FILES = [
   'step_grass', 'jump', 'land', 'coin', 'star', 'correct', 'wrong', 'splash',
   'croc', 'achievement', 'level_complete', 'stone_sink',
   'step_sand', 'stone_door', 'carpet', 'sand_sink', 'bump',
+  'step_floor', 'ball_pit', 'gate_chime',
+  'animal_kucing', 'animal_anjing', 'animal_lembu', 'animal_itik', 'animal_ayam', 'animal_kambing',
 ] as const;
 /** Sounds that are always synthesised (no audio file). */
 const SYNTH_ONLY = new Set(['button']);
@@ -330,6 +332,9 @@ export class AudioManager {
       case 'carpet': this.noise(0, 0.6, 0.18 * v, 2400); this.tone(500, 0, 0.5, 'sine', 0.1 * v, 900); break;
       case 'sand_sink': this.noise(0, 0.7, 0.3 * v, 700); break;
       case 'bump': this.tone(160, 0, 0.18, 'sine', 0.3 * v, 90); break;
+      case 'step_floor': this.noise(0, 0.04, 0.1 * v, 1400); break;
+      case 'ball_pit': this.noise(0, 0.5, 0.3 * v, 2600); this.tone(300, 0, 0.2, 'sine', 0.12 * v, 160); break;
+      case 'gate_chime': [784, 988, 1175, 1568].forEach((f, i) => this.tone(f, i * 0.08, 0.3, 'triangle', 0.16 * v)); break;
       case 'coin': this.tone(1320, 0, 0.09, 'square', 0.1 * v); this.tone(1760, 0.07, 0.16, 'square', 0.1 * v); break;
       case 'star': [880, 1108, 1320, 1760].forEach((f, i) => this.tone(f, i * 0.06, 0.2, 'triangle', 0.18 * v)); break;
       case 'correct': [523, 659, 784, 1047].forEach((f, i) => this.tone(f, i * 0.09, 0.22, 'triangle', 0.22 * v)); break;

@@ -14,11 +14,11 @@ It runs in a desktop or mobile browser. Nothing to install for players.
 |---|---|---|
 | 1. Hutan Misteri (Jungle) | Sungai Nombor · Huruf Yang Hilang · Harta Karun Hutan | Playable |
 | 2. Gurun Penemuan (Desert) | Pintu Bentuk · Permaidani Warna · Kira di Gurun | Playable |
-| 3. Sekolah Ajaib (School) | Upper/lower case · Word builder · Animals | Designed, not built |
+| 3. Sekolah Ajaib (School) | Huruf Besar dan Kecil · Bina Perkataan · Kenal Haiwan | Playable |
 | 4. Cabaran Gunung Berapi (Volcano) | Addition · Subtraction · Sequences | Designed, not built |
 | 5. Kerajaan Beku (Snow) | Mixed challenges · Snow Guardian finale | Designed, not built |
 
-Worlds 3–5 appear on the world map as locked or "Akan datang!" and unlock in
+Worlds 4–5 appear on the world map as locked or "Akan datang!" and unlock in
 order.
 
 Every question is read aloud by a narrator when it appears, and the speaker
@@ -87,8 +87,8 @@ npm run build && npx vite preview --port 4173
 npm run test:e2e
 ```
 
-The end-to-end run plays all six jungle and desert stages through the real
-input layer in a headless browser (wrong answers, falls, checkpoints, rewards, the quiz,
+The end-to-end run plays all nine jungle, desert and school stages through
+the real input layer in a headless browser (wrong answers, falls, checkpoints, rewards, the quiz,
 saving, unlocking) and then checks touch controls, audio playback and render
 cost on a phone-sized screen. Screenshots land in `tests/e2e/output`.
 
@@ -107,6 +107,13 @@ The 11 MB source files are not kept in the repository; they remain in the
 Higgsfield account that generated them.
 
 ## Audio
+
+Narration is recorded as long takes of many lines and cut into one clip per
+line:
+
+```bash
+python3 tools/split_narration.py take.mp3 public/assets/audio/voice name1 name2
+```
 
 Music and sound effects were generated for this project with Higgsfield
 (ElevenLabs Music and Mirelo SFX); Affan's voice lines with ElevenLabs,

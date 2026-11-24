@@ -17,13 +17,14 @@ export interface GameApi {
   addCoin(at: THREE.Vector3): void;
   addStar(at: THREE.Vector3): void;
   /** Affan fell in water, sand or off the world: lose a heart, return to the checkpoint. */
-  fell(kind: 'water' | 'sand' | 'void'): void;
+  fell(kind: 'water' | 'sand' | 'balls' | 'void'): void;
   setCheckpoint(x: number, y: number, z: number): void;
   praise(at?: THREE.Vector3): void;
   encourage(): void;
   say(text: string, opts?: { voice?: string; emote?: Emote; duration?: number }): void;
   /** Show the question panel; `voice` names the narration clip that reads it aloud. */
-  showQuestion(prompt: string, detail?: string, voice?: string): void;
+  /** `thenSfx` names a sound played right after the narration (e.g. the animal to identify). */
+  showQuestion(prompt: string, detail?: string, voice?: string, thenSfx?: string): void;
   hideQuestion(): void;
   setTask(text: string | null): void;
   /** Big tappable answer buttons (also keys 1-3). Resolves once the right answer is chosen. */
@@ -95,7 +96,7 @@ export abstract class StageBase {
   /** Water surface height; falling below it triggers a splash. */
   waterLevel: number | null = null;
   /** What is down there: water splashes, sand swallows softly. */
-  pitKind: 'water' | 'sand' = 'water';
+  pitKind: 'water' | 'sand' | 'balls' = 'water';
   /** Anything below this is "fell off the world". */
   voidLevel = -12;
   /** Camera offset from Affan (behind and above). */

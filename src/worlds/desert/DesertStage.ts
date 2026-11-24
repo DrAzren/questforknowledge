@@ -1,10 +1,13 @@
 import * as THREE from 'three';
 import { boxCollider, discCollider, type Collider } from '../../engine/Physics';
-import { makePalm, makeRock, mat, mergeInto, shadow } from '../../env/builders';
+import { makePalm, makeRock, mat, shadow } from '../../env/builders';
 import {
   makeBoulder, makeCactus, makeColumn, makeDune, makePyramid, makeRuinWall, SAND, SAND_DARK, SANDSTONE, SANDSTONE_DARK,
 } from '../../env/desert';
-import { StageBase, type WorldTheme } from '../Stage';
+import { ObstacleStage, type Gate } from '../Obstacles';
+import type { WorldTheme } from '../Stage';
+
+export type { Gate };
 
 export const DESERT_THEME: WorldTheme = {
   sky: [0x3f9bea, 0xfde6b0, 0xe9c46a],
@@ -16,28 +19,11 @@ export const DESERT_THEME: WorldTheme = {
   footstep: 'step_sand',
 };
 
-export interface Gate {
-  z: number;
-  open(): void;
-  readonly isOpen: boolean;
-}
-
 /** Shared desert building blocks: sand, quicksand pits, stone gates, moving platforms, rolling boulders. */
-export abstract class DesertStage extends StageBase {
-  /** Static scenery collected here is merged into a few meshes at the end of build(). */
-  protected decor = new THREE.Group();
-  private gates: { door: THREE.Mesh; collider: Collider; open: boolean; t: number }[] = [];
-  private boulders: { mesh: THREE.Group; collider: Collider; radius: number; lastX: number; cooldown: number }[] = [];
-
-  /** Half-width of the walkable path. */
-  protected readonly half = 6.4;
-
+export abstract class DesertStage extends ObstacleStage {
   protected sand(minZ: number, maxZ: number, withWalls = true): void {
     this.ground(-28, 28, minZ, maxZ, 0, 4, SAND, SAND_DARK);
-    if (withWalls) {
-      this.wall(-this.half - 1.4, -this.half, minZ, maxZ);
-      this.wall(this.half, this.half + 1.4, minZ, maxZ);
-    }
+    if (withWalls) this.sideWalls(minZ, maxZ);
   }
 
   /** Soft sand far below the path. Falling in costs a heart and returns Affan to the checkpoint. */
@@ -56,8 +42,7 @@ export abstract class DesertStage extends StageBase {
       ring.position.set(-5 + i * 2.6, -depth + 0.02, minZ + 1 + ((i * 1.7) % Math.max(1, maxZ - minZ - 2)));
       this.group.add(ring);
     }
-    this.wall(-this.half - 1.4, -this.half, minZ, maxZ);
-    this.wall(this.half, this.half + 1.4, minZ, maxZ);
+    this.sideWalls(minZ, maxZ);
   }
 
   /** A sandstone slab that slides from side to side, or shuttles forward and back. */
@@ -90,8 +75,7 @@ export abstract class DesertStage extends StageBase {
     const c = discCollider(0, z, radius * 0.92, radius * 1.85, 0, 'boulder');
     const mid = (minX + maxX) / 2;
     const amp = (maxX - minX) / 2;
-    this.mover(mesh, c, (time) => [mid + Math.sin((time / period) * Math.PI * 2 + phase) * amp, radius * 1.85, z], -radius * 0.85);
-    this.boulders.push({ mesh, collider: c, radius, lastX: c.x, cooldown: 0 });
+    this.pusher(mesh, c, radius, (time) => [mid + Math.sin((time / period) * Math.PI * 2 + phase) * amp, radius * 1.85, z], -radius * 0.85);
   }
 
   /** A wall across the path with a stone door that slides down when opened. */
@@ -130,21 +114,7 @@ export abstract class DesertStage extends StageBase {
       door.add(emblem);
     }
     const collider = this.collide(boxCollider(0, z, doorHalf, 0.3, height, 0, 'door'));
-    const state = { door, collider, open: false, t: 0 };
-    this.gates.push(state);
-    const game = this.game;
-    return {
-      z,
-      open(): void {
-        if (state.open) return;
-        state.open = true;
-        collider.enabled = false;
-        game.audio.sfx('stone_door');
-      },
-      get isOpen(): boolean {
-        return state.open;
-      },
-    };
+    return this.door(door, collider, z, 3.5);
   }
 
   /** Dunes, cacti, palms, rocks and ruins along both sides of the path. */
@@ -189,39 +159,8 @@ export abstract class DesertStage extends StageBase {
     }
   }
 
-  protected finishDecor(): void {
-    const merged = new THREE.Group();
-    merged.add(...this.decor.children.slice());
-    mergeInto(merged);
-    merged.traverse((o) => {
-      if ((o as THREE.Mesh).isMesh) o.receiveShadow = true;
-    });
-    this.group.add(merged);
-    this.decor.clear();
-  }
-
   /** Doors sliding, boulders rolling and bumping. Call from tick(). */
   protected tickDesert(dt: number): void {
-    for (const g of this.gates) {
-      if (g.open && g.t < 1) {
-        g.t = Math.min(1, g.t + dt / 1.1);
-        const e = g.t * g.t * (3 - 2 * g.t);
-        g.door.position.y = 1.65 - e * 3.5;
-        g.door.position.x = Math.sin(g.t * 60) * 0.02 * (1 - g.t);
-      }
-    }
-    const b = this.game.body;
-    for (const r of this.boulders) {
-      const dx = r.collider.x - r.lastX;
-      r.lastX = r.collider.x;
-      r.mesh.rotation.z -= dx / r.radius;
-      r.cooldown = Math.max(0, r.cooldown - dt);
-      const d = Math.hypot(b.x - r.collider.x, b.z - r.collider.z);
-      if (r.cooldown === 0 && d < r.collider.r + b.cfg.radius + 0.06 && b.y < r.collider.top - 0.3 && !this.game.busy) {
-        r.cooldown = 1.3;
-        this.game.audio.sfx('bump');
-        this.game.affan.play('surprised', 0.6);
-      }
-    }
+    this.tickObstacles(dt);
   }
 }

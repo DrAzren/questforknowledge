@@ -5,11 +5,15 @@ import { ShapeGatesStage } from './desert/ShapeGates';
 import { JUNGLE_THEME } from './jungle/JungleStage';
 import { JungleTreasureStage } from './jungle/JungleTreasure';
 import { MissingAlphabetStage } from './jungle/MissingAlphabet';
+import { AnimalMatchStage } from './school/AnimalMatch';
+import { LetterMatchStage } from './school/LetterMatch';
+import { SCHOOL_THEME } from './school/SchoolStage';
+import { WordBuilderStage } from './school/WordBuilder';
 import { NumberRiverStage } from './jungle/NumberRiver';
 import type { WorldDef } from './Stage';
 
 /**
- * The five worlds. Worlds 1 and 2 are fully playable; worlds 3-5 are listed so the
+ * The five worlds. Worlds 1 to 3 are fully playable; worlds 4-5 are listed so the
  * world map and unlock chain are real, and each becomes playable by adding its
  * stages here (they reuse the same engine, HUD, audio and question systems).
  */
@@ -47,9 +51,20 @@ export const WORLDS: WorldDef[] = [
     ],
   },
   {
-    id: 'school', index: 2, name: 'Sekolah Ajaib', tagline: 'Abjad, perkataan dan haiwan', emoji: '🏫',
+    id: 'school',
+    index: 2,
+    name: 'Sekolah Ajaib',
+    tagline: 'Abjad, perkataan dan haiwan',
+    emoji: '🏫',
     badge: { id: 'little-scholar', name: 'Lencana Cendekiawan Cilik', emoji: '🎓' },
-    theme: JUNGLE_THEME, available: false, stages: [],
+    introLine: { text: 'Wah! Sekolah ajaib! Jom kita belajar!', voice: 'intro_school' },
+    theme: SCHOOL_THEME,
+    available: true,
+    stages: [
+      { id: 'school-1', name: 'Huruf Besar dan Kecil', hint: 'Lompat ke blok dengan huruf kecil yang sama!', create: (g) => new LetterMatchStage(g) },
+      { id: 'school-2', name: 'Bina Perkataan', hint: 'Kumpul huruf mengikut urutan untuk mengeja perkataan!', create: (g) => new WordBuilderStage(g) },
+      { id: 'school-3', name: 'Kenal Haiwan', hint: 'Cari haiwan yang betul, dengar bunyinya!', create: (g) => new AnimalMatchStage(g) },
+    ],
   },
   {
     id: 'volcano', index: 3, name: 'Cabaran Gunung Berapi', tagline: 'Tambah, tolak dan turutan nombor', emoji: '🌋',

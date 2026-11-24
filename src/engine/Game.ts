@@ -60,6 +60,8 @@ export class Game implements GameApi {
   private lastPraise = '';
   /** Narration clip for the question currently on screen. */
   private questionVoice: string | null = null;
+  /** Sound that follows the narration (the animal call in "which animal sounds like this?"). */
+  private questionSfx: string | null = null;
   /** Frames rendered, for automated tests. */
   frames = 0;
 
@@ -348,21 +350,38 @@ export class Game implements GameApi {
     if (opts.voice) void this.audio.voice(opts.voice);
   }
 
-  showQuestion(prompt: string, detail?: string, voice?: string): void {
+  showQuestion(prompt: string, detail?: string, voice?: string, thenSfx?: string): void {
     this.hud.showQuestion(prompt, detail);
-    // Read a new question aloud once; progress updates to the same question stay quiet.
-    if (voice && voice !== this.questionVoice) void this.audio.voice(voice, { queue: true });
+    const isNew = !!voice && (voice !== this.questionVoice || (thenSfx ?? null) !== this.questionSfx);
     this.questionVoice = voice ?? null;
+    this.questionSfx = thenSfx ?? null;
+    // Read a new question aloud once; progress updates to the same question stay quiet.
+    if (isNew) this.speakQuestion(true);
+  }
+
+  /** Narrate the current question, then play its follow-up sound if it has one. */
+  private speakQuestion(queue: boolean): void {
+    const voice = this.questionVoice;
+    const sfx = this.questionSfx;
+    if (!voice) return;
+    void this.audio.voice(voice, { queue }).then((seconds) => {
+      if (!sfx) return;
+      window.setTimeout(() => {
+        // Only if the same question is still being asked.
+        if (this.questionVoice === voice && this.questionSfx === sfx && this.mode === 'play') this.audio.sfx(sfx);
+      }, seconds * 1000 + 250);
+    });
   }
 
   hideQuestion(): void {
     this.hud.hideQuestion();
     this.questionVoice = null;
+    this.questionSfx = null;
   }
 
   /** The speaker button (or R): hear the current question again. */
   private replayQuestion(): void {
-    if (this.questionVoice && this.mode === 'play') void this.audio.voice(this.questionVoice);
+    if (this.questionVoice && this.mode === 'play') this.speakQuestion(false);
   }
 
   setTask(text: string | null): void {
@@ -407,7 +426,7 @@ export class Game implements GameApi {
       });
   }
 
-  fell(kind: 'water' | 'sand' | 'void'): void {
+  fell(kind: 'water' | 'sand' | 'balls' | 'void'): void {
     if (this._busy) return;
     this._busy = true;
     this.body.active = false;
@@ -415,6 +434,9 @@ export class Game implements GameApi {
     if (kind === 'water') {
       this.audio.sfx('splash');
       this.sparkles.burst(at, 46, [0xffffff, 0xa5d8ff, 0x74c0fc], 5.5);
+    } else if (kind === 'balls') {
+      this.audio.sfx('ball_pit');
+      this.sparkles.burst(at, 46, [0xff6b6b, 0xffd43b, 0x4dabf7, 0x69db7c, 0xda77f2], 5);
     } else if (kind === 'sand') {
       this.audio.sfx('sand_sink');
       this.sparkles.burst(at, 40, [0xf4d58d, 0xe9c46a, 0xfff3bf], 4);
@@ -651,6 +673,7 @@ export class Game implements GameApi {
       model: this.affan.usingModel,
       question: this.hud.questionText,
       questionVoice: this.questionVoice,
+      questionSfx: this.questionSfx,
       screen: this.hud.current,
       music: this.audio.currentMusic,
       musicPlaying: this.audio.musicPlaying,

@@ -214,10 +214,10 @@ const shot = async (page, file) => { await page.evaluate(() => window.bot.render
   await page.screenshot({ path: path.join(OUT, 'd3_badge.png') });
   check('world complete screen shows the Desert Explorer badge', (await page.textContent('#badge-name')).includes('Peneroka Gurun'));
   const save = await ev(() => JSON.parse(localStorage.getItem('curious-affan-save-v1')));
-  check('badge saved and World 3 unlocked (shown as coming soon)', save.badges.includes('desert-explorer') && save.unlockedWorld === 2 && save.stagesDone.desert === 3, JSON.stringify({ b: save.badges, u: save.unlockedWorld }));
+  check('badge saved and World 3 unlocked', save.badges.includes('desert-explorer') && save.unlockedWorld === 2 && save.stagesDone.desert === 3, JSON.stringify({ b: save.badges, u: save.unlockedWorld }));
   await page.click('#btn-complete-menu');
   const cards2 = await page.$$eval('.world-card', (els) => els.map((e) => e.className + '|' + e.textContent));
-  check('world map: World 3 says "Akan datang!", Worlds 4-5 still locked', cards2[2].includes('Akan datang') && cards2[3].includes('locked') && cards2[4].includes('locked'));
+  check('world map: World 3 is now open to play, Worlds 4-5 still locked', cards2[2].includes('live') && !cards2[2].includes('locked') && cards2[3].includes('locked') && cards2[4].includes('locked'));
   // Every narration clip the game can ask for exists as a file.
   const missing = await ev(async () => {
     const names = ['intro_jungle', 'intro_desert', 'jom', 'yeay', 'betul', 'wah_hebat', 'oops_cuba_lagi', 'kita_dah_berjaya', 'n_bagus', 'n_hebatnya', 'n_pandainya', 'n_cuba_lagi', 'n_tak_mengapa', 'n_hampir', 'q_huruf_hilang', 'q_kira_bintang', 'q_kira_unta', 'q_kira_kaktus', 'q_peti_harta',
