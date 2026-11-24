@@ -78,6 +78,46 @@ export function spokenAdditionQuestion(rand: Rand, tier: number, optionCount = 3
   };
 }
 
+/** Subtraction questions that have a recorded narration, grouped by difficulty. All stay within 10. */
+export const SUBTRACTION_POOL: [number, number][][] = [
+  [[3, 1], [4, 2], [5, 2], [5, 3], [6, 1]],
+  [[6, 3], [7, 2], [7, 4], [8, 3], [8, 5]],
+  [[9, 4], [9, 6], [10, 3], [10, 5], [10, 7]],
+];
+
+/** A spoken subtraction question from tier 0 (easiest) to 2. `parts` gives a and b for picture displays. */
+export function spokenSubtractionQuestion(rand: Rand, tier: number, optionCount = 3): ChoiceQuestion<number> & { parts: [number, number] } {
+  const pool = SUBTRACTION_POOL[Math.max(0, Math.min(SUBTRACTION_POOL.length - 1, tier))];
+  const [a, b] = pool[Math.floor(rand() * pool.length)];
+  return {
+    prompt: `Affan, berapakah ${a} − ${b}?`,
+    detail: `${a} − ${b} = ?`,
+    answer: a - b,
+    options: numberOptions(rand, a - b, optionCount, 0, 10),
+    voice: `q_sub_${a}_${b}`,
+    parts: [a, b],
+  };
+}
+
+/** Five numbers counting up by one with one missing (never the first), starting between minStart and maxStart. */
+export function numberSequenceQuestion(
+  rand: Rand, minStart: number, maxStart: number, optionCount = 3,
+): ChoiceQuestion<number> & { sequence: number[]; missingIndex: number } {
+  const start = randInt(rand, minStart, maxStart);
+  const sequence = [0, 1, 2, 3, 4].map((i) => start + i);
+  const missingIndex = randInt(rand, 1, 4);
+  const answer = sequence[missingIndex];
+  return {
+    prompt: 'Nombor apakah yang hilang?',
+    detail: sequence.map((n, i) => (i === missingIndex ? '?' : String(n))).join('  '),
+    answer,
+    options: numberOptions(rand, answer, optionCount, 1, 20),
+    voice: 'q_nombor_hilang',
+    sequence,
+    missingIndex,
+  };
+}
+
 /** a - b with a no larger than max (subtraction within 10), never negative. */
 export function subtractionQuestion(rand: Rand, max: number, optionCount = 3): ChoiceQuestion<number> {
   const a = randInt(rand, 2, Math.min(10, max));

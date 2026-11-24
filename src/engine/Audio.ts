@@ -20,10 +20,11 @@ export const SFX_FILES = [
   'step_sand', 'stone_door', 'carpet', 'sand_sink', 'bump',
   'step_floor', 'ball_pit', 'gate_chime',
   'animal_kucing', 'animal_anjing', 'animal_lembu', 'animal_itik', 'animal_ayam', 'animal_kambing',
+  'step_rock', 'sizzle', 'rock_rise', 'rock_fall', 'geyser',
 ] as const;
 /** Sounds that are always synthesised (no audio file). */
 const SYNTH_ONLY = new Set(['button']);
-export const LOOP_FILES = ['waterfall', 'jungle_amb', 'wind'] as const;
+export const LOOP_FILES = ['waterfall', 'jungle_amb', 'wind', 'lava_amb'] as const;
 
 interface LoopHandle {
   gain: GainNode;
@@ -333,6 +334,11 @@ export class AudioManager {
       case 'sand_sink': this.noise(0, 0.7, 0.3 * v, 700); break;
       case 'bump': this.tone(160, 0, 0.18, 'sine', 0.3 * v, 90); break;
       case 'step_floor': this.noise(0, 0.04, 0.1 * v, 1400); break;
+      case 'step_rock': this.noise(0, 0.05, 0.12 * v, 1100); break;
+      case 'sizzle': this.noise(0, 0.7, 0.25 * v, 6000); break;
+      case 'rock_rise': this.noise(0, 0.9, 0.3 * v, 260); this.tone(60, 0, 0.9, 'sawtooth', 0.08 * v, 90); break;
+      case 'rock_fall': this.noise(0, 0.18, 0.35 * v, 420); break;
+      case 'geyser': this.noise(0, 0.9, 0.22 * v, 3200); this.tone(240, 0, 0.8, 'sine', 0.06 * v, 620); break;
       case 'ball_pit': this.noise(0, 0.5, 0.3 * v, 2600); this.tone(300, 0, 0.2, 'sine', 0.12 * v, 160); break;
       case 'gate_chime': [784, 988, 1175, 1568].forEach((f, i) => this.tone(f, i * 0.08, 0.3, 'triangle', 0.16 * v)); break;
       case 'coin': this.tone(1320, 0, 0.09, 'square', 0.1 * v); this.tone(1760, 0.07, 0.16, 'square', 0.1 * v); break;

@@ -15,10 +15,10 @@ It runs in a desktop or mobile browser. Nothing to install for players.
 | 1. Hutan Misteri (Jungle) | Sungai Nombor · Huruf Yang Hilang · Harta Karun Hutan | Playable |
 | 2. Gurun Penemuan (Desert) | Pintu Bentuk · Permaidani Warna · Kira di Gurun | Playable |
 | 3. Sekolah Ajaib (School) | Huruf Besar dan Kecil · Bina Perkataan · Kenal Haiwan | Playable |
-| 4. Cabaran Gunung Berapi (Volcano) | Addition · Subtraction · Sequences | Designed, not built |
+| 4. Cabaran Gunung Berapi (Volcano) | Jambatan Lava · Gua Kristal · Puncak Gunung | Playable |
 | 5. Kerajaan Beku (Snow) | Mixed challenges · Snow Guardian finale | Designed, not built |
 
-Worlds 4–5 appear on the world map as locked or "Akan datang!" and unlock in
+World 5 appears on the world map as locked or "Akan datang!" and unlocks in
 order.
 
 Every question is read aloud by a narrator when it appears, and the speaker
@@ -87,7 +87,7 @@ npm run build && npx vite preview --port 4173
 npm run test:e2e
 ```
 
-The end-to-end run plays all nine jungle, desert and school stages through
+The end-to-end run plays all twelve jungle, desert, school and volcano stages through
 the real input layer in a headless browser (wrong answers, falls, checkpoints, rewards, the quiz,
 saving, unlocking) and then checks touch controls, audio playback and render
 cost on a phone-sized screen. Screenshots land in `tests/e2e/output`.

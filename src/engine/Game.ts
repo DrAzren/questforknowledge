@@ -426,7 +426,7 @@ export class Game implements GameApi {
       });
   }
 
-  fell(kind: 'water' | 'sand' | 'balls' | 'void'): void {
+  fell(kind: 'water' | 'sand' | 'balls' | 'lava' | 'void'): void {
     if (this._busy) return;
     this._busy = true;
     this.body.active = false;
@@ -434,6 +434,10 @@ export class Game implements GameApi {
     if (kind === 'water') {
       this.audio.sfx('splash');
       this.sparkles.burst(at, 46, [0xffffff, 0xa5d8ff, 0x74c0fc], 5.5);
+    } else if (kind === 'lava') {
+      // A cartoon "hot hot hot!": a sizzle and a puff of steam, nothing more.
+      this.audio.sfx('sizzle');
+      this.sparkles.burst(at, 50, [0xffffff, 0xf1f3f5, 0xffd8a8, 0xffa94d], 6);
     } else if (kind === 'balls') {
       this.audio.sfx('ball_pit');
       this.sparkles.burst(at, 46, [0xff6b6b, 0xffd43b, 0x4dabf7, 0x69db7c, 0xda77f2], 5);

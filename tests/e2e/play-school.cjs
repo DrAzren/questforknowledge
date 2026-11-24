@@ -206,10 +206,10 @@ const shot = async (page, file) => { await page.evaluate(() => window.bot.render
   await page.screenshot({ path: path.join(OUT, 's3_badge.png') });
   check('world complete screen shows the Little Scholar badge', (await page.textContent('#badge-name')).includes('Cendekiawan Cilik'));
   const save = await ev(() => JSON.parse(localStorage.getItem('curious-affan-save-v1')));
-  check('badge saved and World 4 unlocked (shown as coming soon)', save.badges.includes('little-scholar') && save.unlockedWorld === 3 && save.stagesDone.school === 3, JSON.stringify({ b: save.badges, u: save.unlockedWorld }));
+  check('badge saved and World 4 unlocked', save.badges.includes('little-scholar') && save.unlockedWorld === 3 && save.stagesDone.school === 3, JSON.stringify({ b: save.badges, u: save.unlockedWorld }));
   await page.click('#btn-complete-menu');
   const cards2 = await page.$$eval('.world-card', (els) => els.map((e) => e.className + '|' + e.textContent));
-  check('world map: World 4 says "Akan datang!", World 5 still locked', cards2[3].includes('Akan datang') && cards2[4].includes('locked'));
+  check('world map: World 4 is open to play, World 5 still locked', cards2[3].includes('live') && !cards2[3].includes('locked') && cards2[4].includes('locked'));
   const missing = await ev(async () => {
     const names = ['intro_school', 'q_bunyi', ...'abdeghmnqr'.split('').map((l) => 'q_huruf_' + l), ...['cat', 'dog', 'sun', 'bus'].map((w) => 'q_eja_' + w), ...['kucing', 'anjing', 'lembu', 'itik', 'ayam', 'kambing'].map((a) => 'q_cari_' + a)];
     const sfx = ['step_floor', 'ball_pit', 'gate_chime', ...['kucing', 'anjing', 'lembu', 'itik', 'ayam', 'kambing'].map((a) => 'animal_' + a)];

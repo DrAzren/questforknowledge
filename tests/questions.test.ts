@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   ADDITION_POOL, additionQuestion, countQuestion, ENCOURAGE_LINES, missingLetterQuestion, missingNumberQuestion,
-  PRAISE_LINES, spokenAdditionQuestion, subtractionQuestion,
+  numberSequenceQuestion, PRAISE_LINES, spokenAdditionQuestion, spokenSubtractionQuestion, SUBTRACTION_POOL, subtractionQuestion,
   type ChoiceQuestion,
 } from '../src/edu/questions';
 
@@ -46,6 +46,43 @@ describe('question generators (age 4-6 limits)', () => {
       expect(q.answer).toBeLessThanOrEqual(limits[tier]);
       expect(q.voice).toBe(`q_add_${a}_${b}`);
       expect(ADDITION_POOL[tier].some(([x, y]) => x === a && y === b)).toBe(true);
+      checkOptions(q);
+    }
+  });
+
+  it('spoken subtraction: within 10, never negative or zero, harder by tier, names its narration clip', () => {
+    for (let i = 0; i < 1500; i++) {
+      const tier = i % 3;
+      const q = spokenSubtractionQuestion(rand, tier);
+      const [a, b] = q.parts;
+      expect(a - b).toBe(q.answer);
+      expect(a).toBeLessThanOrEqual(10);
+      expect(q.answer).toBeGreaterThan(0);
+      expect(q.voice).toBe(`q_sub_${a}_${b}`);
+      expect(q.detail).toBe(`${a} − ${b} = ?`);
+      expect(SUBTRACTION_POOL[tier].some(([x, y]) => x === a && y === b)).toBe(true);
+      expect(q.options.every((o) => o >= 0 && o <= 10)).toBe(true);
+      checkOptions(q);
+    }
+    const largest = SUBTRACTION_POOL.map((tier) => Math.max(...tier.map(([a]) => a)));
+    expect(largest[0]).toBeLessThan(largest[1]);
+    expect(largest[1]).toBeLessThan(largest[2]);
+  });
+
+  it('number sequences: five in a row, one missing (never the first), all within 1-20', () => {
+    for (let i = 0; i < 1500; i++) {
+      const [min, max] = [[1, 1], [2, 6], [10, 15]][i % 3];
+      const q = numberSequenceQuestion(rand, min, max);
+      expect(q.sequence).toHaveLength(5);
+      expect(q.sequence[0]).toBeGreaterThanOrEqual(min);
+      expect(q.sequence[0]).toBeLessThanOrEqual(max);
+      q.sequence.forEach((n, k) => expect(n).toBe(q.sequence[0] + k));
+      expect(q.sequence[4]).toBeLessThanOrEqual(20);
+      expect(q.missingIndex).toBeGreaterThanOrEqual(1);
+      expect(q.sequence[q.missingIndex]).toBe(q.answer);
+      expect(q.detail!.split('  ')).toEqual(q.sequence.map((n, k) => (k === q.missingIndex ? '?' : String(n))));
+      expect(q.options.every((o) => o >= 1 && o <= 20)).toBe(true);
+      expect(q.voice).toBe('q_nombor_hilang');
       checkOptions(q);
     }
   });

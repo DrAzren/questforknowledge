@@ -10,10 +10,14 @@ import { LetterMatchStage } from './school/LetterMatch';
 import { SCHOOL_THEME } from './school/SchoolStage';
 import { WordBuilderStage } from './school/WordBuilder';
 import { NumberRiverStage } from './jungle/NumberRiver';
+import { CrystalCaveStage } from './volcano/CrystalCave';
+import { LavaBridgesStage } from './volcano/LavaBridges';
+import { SummitSequenceStage } from './volcano/SummitSequence';
+import { VOLCANO_THEME } from './volcano/VolcanoStage';
 import type { WorldDef } from './Stage';
 
 /**
- * The five worlds. Worlds 1 to 3 are fully playable; worlds 4-5 are listed so the
+ * The five worlds. Worlds 1 to 4 are fully playable; world 5 is listed so the
  * world map and unlock chain are real, and each becomes playable by adding its
  * stages here (they reuse the same engine, HUD, audio and question systems).
  */
@@ -67,9 +71,20 @@ export const WORLDS: WorldDef[] = [
     ],
   },
   {
-    id: 'volcano', index: 3, name: 'Cabaran Gunung Berapi', tagline: 'Tambah, tolak dan turutan nombor', emoji: '🌋',
+    id: 'volcano',
+    index: 3,
+    name: 'Cabaran Gunung Berapi',
+    tagline: 'Tambah, tolak dan turutan nombor',
+    emoji: '🌋',
     badge: { id: 'fire-explorer', name: 'Lencana Peneroka Api', emoji: '🔥' },
-    theme: JUNGLE_THEME, available: false, stages: [],
+    introLine: { text: 'Wah! Gunung berapi! Jom kita daki!', voice: 'intro_volcano' },
+    theme: VOLCANO_THEME,
+    available: true,
+    stages: [
+      { id: 'volcano-1', name: 'Jambatan Lava', hint: 'Lompat ke batu dengan jawapan tambah yang betul!', create: (g) => new LavaBridgesStage(g) },
+      { id: 'volcano-2', name: 'Gua Kristal', hint: 'Kira kristal yang tinggal, naik wap yang betul!', create: (g) => new CrystalCaveStage(g) },
+      { id: 'volcano-3', name: 'Puncak Gunung', hint: 'Cari nombor yang hilang, lompat batu ikut turutan!', create: (g) => new SummitSequenceStage(g) },
+    ],
   },
   {
     id: 'snow', index: 4, name: 'Kerajaan Beku', tagline: 'Cabaran ilmu terhebat', emoji: '❄️',

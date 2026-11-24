@@ -17,7 +17,7 @@ export interface GameApi {
   addCoin(at: THREE.Vector3): void;
   addStar(at: THREE.Vector3): void;
   /** Affan fell in water, sand or off the world: lose a heart, return to the checkpoint. */
-  fell(kind: 'water' | 'sand' | 'balls' | 'void'): void;
+  fell(kind: 'water' | 'sand' | 'balls' | 'lava' | 'void'): void;
   setCheckpoint(x: number, y: number, z: number): void;
   praise(at?: THREE.Vector3): void;
   encourage(): void;
@@ -96,7 +96,7 @@ export abstract class StageBase {
   /** Water surface height; falling below it triggers a splash. */
   waterLevel: number | null = null;
   /** What is down there: water splashes, sand swallows softly. */
-  pitKind: 'water' | 'sand' | 'balls' = 'water';
+  pitKind: 'water' | 'sand' | 'balls' | 'lava' = 'water';
   /** Anything below this is "fell off the world". */
   voidLevel = -12;
   /** Camera offset from Affan (behind and above). */
