@@ -22,7 +22,7 @@ export abstract class ObstacleStage extends StageBase {
   protected readonly half = 6.4;
 
   private doors: { mesh: THREE.Object3D; collider: Collider; open: boolean; t: number; travel: number; baseY: number; baseX: number }[] = [];
-  private pushers: { mesh: THREE.Object3D; collider: Collider; radius: number; lastX: number; lastZ: number; cooldown: number; roll: boolean }[] = [];
+  private pushers: { mesh: THREE.Object3D; collider: Collider; radius: number; lastX: number; lastZ: number; cooldown: number; roll: boolean; sound?: string }[] = [];
 
   /** Invisible walls along both sides of a stretch of path. */
   protected sideWalls(minZ: number, maxZ: number): void {
@@ -55,10 +55,10 @@ export abstract class ObstacleStage extends StageBase {
    */
   protected pusher(
     mesh: THREE.Object3D, collider: Collider, radius: number,
-    path: (time: number) => [number, number, number], meshDY: number, roll = true,
+    path: (time: number) => [number, number, number], meshDY: number, roll = true, sound?: string,
   ): void {
     this.mover(mesh, collider, path, meshDY);
-    this.pushers.push({ mesh, collider, radius, lastX: collider.x, lastZ: collider.z, cooldown: 0, roll });
+    this.pushers.push({ mesh, collider, radius, lastX: collider.x, lastZ: collider.z, cooldown: 0, roll, sound });
   }
 
   protected finishDecor(): void {
@@ -93,6 +93,7 @@ export abstract class ObstacleStage extends StageBase {
       if (p.cooldown === 0 && d < p.collider.r + b.cfg.radius + 0.06 && b.y < p.collider.top - 0.3 && !this.game.busy) {
         p.cooldown = 1.3;
         this.game.audio.sfx('bump');
+        if (p.sound) this.game.audio.sfx(p.sound, { volume: 0.8 });
         this.game.affan.play('surprised', 0.6);
       }
     }

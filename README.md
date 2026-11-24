@@ -16,10 +16,11 @@ It runs in a desktop or mobile browser. Nothing to install for players.
 | 2. Gurun Penemuan (Desert) | Pintu Bentuk · Permaidani Warna · Kira di Gurun | Playable |
 | 3. Sekolah Ajaib (School) | Huruf Besar dan Kecil · Bina Perkataan · Kenal Haiwan | Playable |
 | 4. Cabaran Gunung Berapi (Volcano) | Jambatan Lava · Gua Kristal · Puncak Gunung | Playable |
-| 5. Kerajaan Beku (Snow) | Mixed challenges · Snow Guardian finale | Designed, not built |
+| 5. Kerajaan Beku (Snow) | Abjad Salji · Tasik Penguin · Penjaga Salji | Playable |
 
-World 5 appears on the world map as locked or "Akan datang!" and unlocks in
-order.
+Worlds unlock in order. The last stage is the friendly Snow Guardian: five
+questions, one of each kind met on the journey, free the Frozen Crystal, the
+kingdom turns magical, and Affan is awarded the Master Explorer Trophy.
 
 Every question is read aloud by a narrator when it appears, and the speaker
 button on the question panel (or the R key) repeats it. Praise and
@@ -87,7 +88,7 @@ npm run build && npx vite preview --port 4173
 npm run test:e2e
 ```
 
-The end-to-end run plays all twelve jungle, desert, school and volcano stages through
+The end-to-end run plays all fifteen stages of the five worlds through
 the real input layer in a headless browser (wrong answers, falls, checkpoints, rewards, the quiz,
 saving, unlocking) and then checks touch controls, audio playback and render
 cost on a phone-sized screen. Screenshots land in `tests/e2e/output`.
@@ -119,5 +120,6 @@ Music and sound effects were generated for this project with Higgsfield
 (ElevenLabs Music and Mirelo SFX); Affan's voice lines with ElevenLabs,
 using the project owner's own "Affan Clone" voice, and the narrator's
 questions and feedback with the library voice "Zain – Gentle Kids Story
-Narrator". The button click is
+Narrator", and the Snow Guardian with the library voice "Shahrul – Resonant
+Documentary Narrator". The button click is
 synthesised in the browser. Any missing sound falls back to a synthesised one.

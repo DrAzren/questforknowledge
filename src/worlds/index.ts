@@ -10,6 +10,10 @@ import { LetterMatchStage } from './school/LetterMatch';
 import { SCHOOL_THEME } from './school/SchoolStage';
 import { WordBuilderStage } from './school/WordBuilder';
 import { NumberRiverStage } from './jungle/NumberRiver';
+import { AlphabetSnowStage } from './snow/AlphabetSnow';
+import { PenguinLakeStage } from './snow/PenguinLake';
+import { SnowGuardianStage } from './snow/SnowGuardian';
+import { SNOW_THEME } from './snow/SnowStage';
 import { CrystalCaveStage } from './volcano/CrystalCave';
 import { LavaBridgesStage } from './volcano/LavaBridges';
 import { SummitSequenceStage } from './volcano/SummitSequence';
@@ -17,9 +21,8 @@ import { VOLCANO_THEME } from './volcano/VolcanoStage';
 import type { WorldDef } from './Stage';
 
 /**
- * The five worlds. Worlds 1 to 4 are fully playable; world 5 is listed so the
- * world map and unlock chain are real, and each becomes playable by adding its
- * stages here (they reuse the same engine, HUD, audio and question systems).
+ * The five worlds, in the order they unlock. A world is a theme plus a list of
+ * stages; every stage reuses the same engine, HUD, audio and question systems.
  */
 export const WORLDS: WorldDef[] = [
   {
@@ -87,8 +90,19 @@ export const WORLDS: WorldDef[] = [
     ],
   },
   {
-    id: 'snow', index: 4, name: 'Kerajaan Beku', tagline: 'Cabaran ilmu terhebat', emoji: '❄️',
+    id: 'snow',
+    index: 4,
+    name: 'Kerajaan Beku',
+    tagline: 'Cabaran ilmu terhebat',
+    emoji: '❄️',
     badge: { id: 'master-explorer', name: 'Trofi Peneroka Agung', emoji: '🏆' },
-    theme: JUNGLE_THEME, available: false, stages: [],
+    introLine: { text: 'Wah! Banyaknya salji! Jom kita teroka!', voice: 'intro_snow' },
+    theme: SNOW_THEME,
+    available: true,
+    stages: [
+      { id: 'snow-1', name: 'Abjad Salji', hint: 'Lompat ke blok ais dengan huruf yang betul!', create: (g) => new AlphabetSnowStage(g) },
+      { id: 'snow-2', name: 'Tasik Penguin', hint: 'Kira penguin dan pilih nombor yang betul!', create: (g) => new PenguinLakeStage(g) },
+      { id: 'snow-3', name: 'Penjaga Salji', hint: 'Jawab lima soalan untuk membuka Kristal Beku!', create: (g) => new SnowGuardianStage(g) },
+    ],
   },
 ];

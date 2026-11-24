@@ -47,6 +47,7 @@ export class Game implements GameApi {
   stageCoins = 0;
   private checkpoint = new THREE.Vector3();
   private _busy = false;
+  private cut: { t: number; duration: number; camera(t: number, out: { pos: THREE.Vector3; look: THREE.Vector3 }): void; done?: () => void } | null = null;
   private facing = Math.PI;
   private camPos = new THREE.Vector3(0, 6, 14);
   private camLook = new THREE.Vector3();
@@ -143,7 +144,7 @@ export class Game implements GameApi {
   }
 
   get busy(): boolean {
-    return this._busy || this.mode !== 'play';
+    return this._busy || this.cut !== null || this.mode !== 'play';
   }
 
   // ---- Boot & flow ----------------------------------------------------------------
@@ -173,6 +174,7 @@ export class Game implements GameApi {
   private toMenu(): void {
     this.mode = 'menu';
     this._busy = false;
+    this.cut = null;
     this.timers = [];
     this.hud.setHudVisible(false);
     this.hud.hideQuestion();
@@ -203,6 +205,30 @@ export class Game implements GameApi {
     const done = this.save.stagesDone[world.id] ?? 0;
     const stage = done >= world.stages.length ? 0 : done;
     this.loadStage(index, stage, true);
+  }
+
+  /** Blend the sky, fog and light from the world's own look (k = 0) toward another (k = 1). */
+  mood(to: WorldTheme, k: number): void {
+    const from = this.world.theme;
+    const mix = (a: number, b: number): THREE.Color => new THREE.Color(a).lerp(new THREE.Color(b), k);
+    const num = (a: number, b: number): number => a + (b - a) * k;
+    if (this.sky) {
+      const u = (this.sky.material as THREE.ShaderMaterial).uniforms;
+      u.top.value.copy(mix(from.sky[0], to.sky[0]));
+      u.horizon.value.copy(mix(from.sky[1], to.sky[1]));
+      u.bottom.value.copy(mix(from.sky[2], to.sky[2]));
+    }
+    const fog = this.scene.fog as THREE.Fog | null;
+    if (fog) {
+      fog.color.copy(mix(from.fog.color, to.fog.color));
+      fog.near = num(from.fog.near, to.fog.near);
+      fog.far = num(from.fog.far, to.fog.far);
+    }
+    this.sun.color.copy(mix(from.sun.color, to.sun.color));
+    this.sun.intensity = num(from.sun.intensity, to.sun.intensity);
+    this.hemi.color.copy(mix(from.ambient.sky, to.ambient.sky));
+    this.hemi.groundColor.copy(mix(from.ambient.ground, to.ambient.ground));
+    this.hemi.intensity = num(from.ambient.intensity, to.ambient.intensity);
   }
 
   private applyTheme(theme: WorldTheme): void {
@@ -242,6 +268,7 @@ export class Game implements GameApi {
   loadStage(worldIndex: number, stageIndex: number, withIntro: boolean): void {
     this.timers = [];
     this._busy = false;
+    this.cut = null;
     this.hud.hideQuestion();
     this.audio.stopLoops();
     this.buildStage(worldIndex, stageIndex);
@@ -348,6 +375,11 @@ export class Game implements GameApi {
     this.hud.bubble(text, d);
     if (opts.emote) this.affan.play(opts.emote, d);
     if (opts.voice) void this.audio.voice(opts.voice);
+  }
+
+  caption(speaker: string, text: string, opts: { voice?: string; duration?: number } = {}): void {
+    this.hud.caption(speaker, text, opts.duration ?? 5);
+    if (opts.voice) void this.audio.voice(opts.voice, { queue: true });
   }
 
   showQuestion(prompt: string, detail?: string, voice?: string, thenSfx?: string): void {
@@ -466,8 +498,15 @@ export class Game implements GameApi {
     });
   }
 
-  completeStage(): void {
+  cutscene(duration: number, camera: (t: number, out: { pos: THREE.Vector3; look: THREE.Vector3 }) => void, done?: () => void): void {
     if (this.mode !== 'play') return;
+    this.cut = { t: 0, duration, camera, done };
+    this.hud.hideQuestion();
+  }
+
+  completeStage(opts: { line?: { text: string; voice: string }; delay?: number } = {}): void {
+    if (this.mode !== 'play') return;
+    this.cut = null;
     this.mode = 'complete';
     this._busy = true;
     this.body.active = false;
@@ -477,7 +516,8 @@ export class Game implements GameApi {
     this.audio.sfx('level_complete');
     this.affan.play('victory', 60);
     this.sparkles.burst(new THREE.Vector3(this.body.x, this.body.y + 2, this.body.z), 60, undefined, 6);
-    this.say('Yeay! Kita dah berjaya!', { voice: 'kita_dah_berjaya', duration: 3 });
+    if (opts.line) this.say(opts.line.text, { voice: opts.line.voice, duration: 5.5 });
+    else this.say('Yeay! Kita dah berjaya!', { voice: 'kita_dah_berjaya', duration: 3 });
 
     const world = this.world;
     const def = world.stages[this.stageIndex];
@@ -492,12 +532,15 @@ export class Game implements GameApi {
     }
     this.persist();
 
-    this.after(2.6, () => {
+    // Finishing the last world is finishing the game: the results screen becomes the trophy.
+    const trophy = last && world.index === WORLDS.length - 1;
+    this.after(opts.delay ?? 2.6, () => {
       if (badge) this.audio.sfx('achievement');
       this.hud.setHudVisible(false);
       this.hud.showComplete({
-        title: last ? `${world.name} selesai!` : 'Peringkat selesai!',
-        subtitle: last ? 'Affan mendapat lencana baharu!' : def.name,
+        title: trophy ? 'Tahniah, Affan!' : last ? `${world.name} selesai!` : 'Peringkat selesai!',
+        subtitle: trophy ? 'Semua dunia sudah diteroka!' : last ? 'Affan mendapat lencana baharu!' : def.name,
+        trophy,
         stars: Math.min(3, this.stageStars),
         maxStars: 3,
         coins: this.stageCoins,
@@ -568,7 +611,7 @@ export class Game implements GameApi {
     let jumpPressed = false;
     let jumpHeld = false;
     let run = false;
-    if (this.mode === 'play' && !this._busy) {
+    if (this.mode === 'play' && !this._busy && !this.cut) {
       mx = inp.moveX;
       mz = -inp.moveY;
       jumpPressed = inp.jumpPressed;
@@ -639,6 +682,14 @@ export class Game implements GameApi {
       const out = { pos: this.camPos, look: this.camLook };
       this.introDef.camera(Math.min(this.introTime, this.introDef.duration), out);
       if (this.introTime >= this.introDef.duration) this.beginPlay(true);
+    } else if (this.cut && this.mode === 'play') {
+      const cut = this.cut;
+      cut.t += dt;
+      cut.camera(Math.min(cut.t, cut.duration), { pos: this.camPos, look: this.camLook });
+      if (cut.t >= cut.duration) {
+        this.cut = null;
+        cut.done?.();
+      }
     } else if (this.mode === 'complete') {
       this.completeTime += dt;
       const a = this.completeTime * 0.7;

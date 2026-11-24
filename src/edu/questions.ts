@@ -118,6 +118,60 @@ export function numberSequenceQuestion(
   };
 }
 
+/** Letters that have a recorded "find the small letter" narration. */
+export const MATCH_LETTERS = 'abdeghmnqr';
+
+/** Capital letter shown; find its small letter among look-alikes. */
+export function lowercaseMatchQuestion(rand: Rand, optionCount = 3): ChoiceQuestion<string> & { upper: string } {
+  const letters = MATCH_LETTERS.split('');
+  const answer = letters[Math.floor(rand() * letters.length)];
+  const others = shuffle(rand, letters.filter((l) => l !== answer)).slice(0, optionCount - 1);
+  return {
+    prompt: 'Cari huruf kecil untuk:',
+    detail: answer.toUpperCase(),
+    answer,
+    options: shuffle(rand, [answer, ...others]),
+    voice: `q_huruf_${answer}`,
+    upper: answer.toUpperCase(),
+  };
+}
+
+/** Snowy words for "which letter does it start with?", each with its own narration. */
+export const FIRST_LETTER_WORDS: { id: string; word: string; emoji: string }[] = [
+  { id: 'penguin', word: 'PENGUIN', emoji: '🐧' },
+  { id: 'beruang', word: 'BERUANG', emoji: '🐻' },
+  { id: 'ikan', word: 'IKAN', emoji: '🐟' },
+  { id: 'salji', word: 'SALJI', emoji: '❄️' },
+  { id: 'rusa', word: 'RUSA', emoji: '🦌' },
+];
+
+/** "Penguin starts with which letter?" The word is shown with its first letter missing. */
+export function firstLetterQuestion(rand: Rand, optionCount = 3): ChoiceQuestion<string> & { word: string } {
+  const item = FIRST_LETTER_WORDS[Math.floor(rand() * FIRST_LETTER_WORDS.length)];
+  const answer = item.word[0];
+  const others = shuffle(rand, FIRST_LETTER_WORDS.map((w) => w.word[0]).filter((l) => l !== answer)).slice(0, optionCount - 1);
+  const name = item.word[0] + item.word.slice(1).toLowerCase();
+  return {
+    prompt: `${item.emoji} ${name} bermula dengan huruf apa?`,
+    detail: `_ ${item.word.slice(1).split('').join(' ')}`,
+    answer,
+    options: shuffle(rand, [answer, ...others]),
+    voice: `q_awal_${item.id}`,
+    word: item.word,
+  };
+}
+
+/** Count the penguins standing in the snow (the picture is the scene itself). */
+export function penguinCountQuestion(rand: Rand, min = 3, max = 8, optionCount = 3): ChoiceQuestion<number> {
+  const n = randInt(rand, min, max);
+  return {
+    prompt: 'Kira penguin. Ada berapa?',
+    answer: n,
+    options: numberOptions(rand, n, optionCount, 1, 10),
+    voice: 'q_kira_penguin',
+  };
+}
+
 /** a - b with a no larger than max (subtraction within 10), never negative. */
 export function subtractionQuestion(rand: Rand, max: number, optionCount = 3): ChoiceQuestion<number> {
   const a = randInt(rand, 2, Math.min(10, max));

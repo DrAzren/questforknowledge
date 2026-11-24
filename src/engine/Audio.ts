@@ -21,6 +21,7 @@ export const SFX_FILES = [
   'step_floor', 'ball_pit', 'gate_chime',
   'animal_kucing', 'animal_anjing', 'animal_lembu', 'animal_itik', 'animal_ayam', 'animal_kambing',
   'step_rock', 'sizzle', 'rock_rise', 'rock_fall', 'geyser',
+  'step_snow', 'ice_form', 'penguin', 'guardian', 'crystal_chime', 'crystal_magic',
 ] as const;
 /** Sounds that are always synthesised (no audio file). */
 const SYNTH_ONLY = new Set(['button']);
@@ -338,6 +339,12 @@ export class AudioManager {
       case 'sizzle': this.noise(0, 0.7, 0.25 * v, 6000); break;
       case 'rock_rise': this.noise(0, 0.9, 0.3 * v, 260); this.tone(60, 0, 0.9, 'sawtooth', 0.08 * v, 90); break;
       case 'rock_fall': this.noise(0, 0.18, 0.35 * v, 420); break;
+      case 'step_snow': this.noise(0, 0.07, 0.1 * v, 700); break;
+      case 'ice_form': this.noise(0, 0.5, 0.12 * v, 5200); this.tone(1400, 0, 0.5, 'triangle', 0.08 * v, 2600); break;
+      case 'penguin': this.tone(520, 0, 0.12, 'square', 0.08 * v, 700); this.tone(560, 0.16, 0.12, 'square', 0.08 * v, 760); break;
+      case 'guardian': this.tone(150, 0, 0.22, 'sine', 0.22 * v, 120); this.tone(140, 0.26, 0.22, 'sine', 0.22 * v, 110); break;
+      case 'crystal_chime': this.tone(1568, 0, 0.6, 'sine', 0.16 * v); this.tone(2093, 0.08, 0.7, 'sine', 0.12 * v); break;
+      case 'crystal_magic': [523, 659, 784, 1047, 1319, 1568].forEach((f, i) => this.tone(f, i * 0.14, 0.9, 'sine', 0.13 * v)); break;
       case 'geyser': this.noise(0, 0.9, 0.22 * v, 3200); this.tone(240, 0, 0.8, 'sine', 0.06 * v, 620); break;
       case 'ball_pit': this.noise(0, 0.5, 0.3 * v, 2600); this.tone(300, 0, 0.2, 'sine', 0.12 * v, 160); break;
       case 'gate_chime': [784, 988, 1175, 1568].forEach((f, i) => this.tone(f, i * 0.08, 0.3, 'triangle', 0.16 * v)); break;

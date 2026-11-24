@@ -33,6 +33,9 @@ export class Hud {
   private settingsReturn: Screen = 'menu';
   private toastTimer = 0;
   private bubbleTimer = 0;
+  private captionTimer = 0;
+  /** Last caption shown (for tests). */
+  captionText = '';
   private quizResolve: (() => void) | null = null;
   private quizQuestion: ChoiceQuestion | null = null;
   private onWrong: (() => void) | null = null;
@@ -208,6 +211,15 @@ export class Hud {
     this.toastTimer = 1.9;
   }
 
+  /** A line spoken by another character, shown along the bottom of the screen. */
+  caption(speaker: string, text: string, seconds = 5): void {
+    el('caption-who').textContent = speaker;
+    el('caption-text').textContent = text;
+    el('caption').classList.add('visible');
+    this.captionText = text;
+    this.captionTimer = seconds;
+  }
+
   /** Affan's speech bubble. */
   bubble(text: string, seconds = 2.6): void {
     el('bubble-text').textContent = text;
@@ -227,6 +239,10 @@ export class Hud {
     if (this.toastTimer > 0) {
       this.toastTimer -= dt;
       if (this.toastTimer <= 0) el('toast').classList.remove('visible');
+    }
+    if (this.captionTimer > 0) {
+      this.captionTimer -= dt;
+      if (this.captionTimer <= 0) el('caption').classList.remove('visible');
     }
     if (this.bubbleTimer > 0) {
       this.bubbleTimer -= dt;
@@ -291,8 +307,9 @@ export class Hud {
 
   showComplete(o: {
     title: string; subtitle: string; stars: number; maxStars: number; coins: number;
-    badge?: { name: string; emoji: string }; nextLabel: string | null;
+    badge?: { name: string; emoji: string }; nextLabel: string | null; trophy?: boolean;
   }): void {
+    el('screen-complete').classList.toggle('trophy', !!o.trophy);
     el('complete-title').textContent = o.title;
     el('complete-sub').textContent = o.subtitle;
     const stars = el('complete-stars');
@@ -340,6 +357,7 @@ const TEMPLATE = `
   <div id="bubble"><span class="bubble-face">🧒</span><span id="bubble-text"></span></div>
 </div>
 <div id="toast"></div>
+<div id="caption"><b id="caption-who"></b><span id="caption-text"></span></div>
 <div id="title-card"><div id="card-title"></div><div id="card-sub"></div></div>
 
 <div id="quiz">
@@ -403,6 +421,21 @@ const TEMPLATE = `
 
 <div id="screen-complete" class="screen panel-screen">
   <div class="panel celebrate">
+    <div id="trophy">
+      <svg viewBox="0 0 120 130" aria-hidden="true">
+        <defs><linearGradient id="gold" x1="0" x2="1"><stop offset="0" stop-color="#ffd43b"/><stop offset="0.5" stop-color="#fff3bf"/><stop offset="1" stop-color="#f59f00"/></linearGradient></defs>
+        <path d="M30 14h60v30c0 20-13 34-30 34S30 64 30 44z" fill="url(#gold)" stroke="#b86e00" stroke-width="4" stroke-linejoin="round"/>
+        <path d="M30 22H12c0 22 8 32 22 34M90 22h18c0 22-8 32-22 34" fill="none" stroke="#b86e00" stroke-width="7" stroke-linecap="round"/>
+        <path d="M30 22H12c0 22 8 32 22 34M90 22h18c0 22-8 32-22 34" fill="none" stroke="#ffd43b" stroke-width="3" stroke-linecap="round"/>
+        <rect x="52" y="76" width="16" height="18" fill="#f59f00" stroke="#b86e00" stroke-width="4"/>
+        <rect x="34" y="94" width="52" height="14" rx="5" fill="url(#gold)" stroke="#b86e00" stroke-width="4"/>
+        <rect x="26" y="108" width="68" height="16" rx="5" fill="#7048e8" stroke="#3b2a8a" stroke-width="4"/>
+        <path d="M60 24l6.5 13 14.4 2.1-10.4 10.2 2.4 14.3L60 56.8l-12.9 6.8 2.4-14.3-10.4-10.2 14.4-2.1z" fill="#fff" stroke="#f59f00" stroke-width="2.5" stroke-linejoin="round"/>
+      </svg>
+      <div id="trophy-name">THE CURIOUS AFFAN</div>
+      <div id="trophy-title">Trofi Peneroka Agung</div>
+      <div id="trophy-en">Master Explorer Trophy</div>
+    </div>
     <h2 id="complete-title"></h2>
     <div id="complete-sub"></div>
     <div id="complete-stars"></div>

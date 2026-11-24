@@ -29,7 +29,14 @@ export interface GameApi {
   setTask(text: string | null): void;
   /** Big tappable answer buttons (also keys 1-3). Resolves once the right answer is chosen. */
   quiz(q: ChoiceQuestion): Promise<void>;
-  completeStage(): void;
+  /** Finish the stage. `line` replaces Affan's usual victory line; `delay` is how long before the results screen. */
+  completeStage(opts?: { line?: { text: string; voice: string }; delay?: number }): void;
+  /** A line spoken by another character: shown along the bottom of the screen and spoken if it has a voice clip. */
+  caption(speaker: string, text: string, opts?: { voice?: string; duration?: number }): void;
+  /** Blend sky, fog and light from the world's own look (k = 0) toward another theme (k = 1). */
+  mood(to: WorldTheme, k: number): void;
+  /** Take the camera for a scripted shot. The player cannot move until it ends. */
+  cutscene(duration: number, camera: (t: number, out: { pos: THREE.Vector3; look: THREE.Vector3 }) => void, done?: () => void): void;
   /** True while a cutscene, quiz or respawn is running. */
   readonly busy: boolean;
 }

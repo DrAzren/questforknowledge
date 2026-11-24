@@ -262,10 +262,10 @@ const shot = async (page, file) => { await page.evaluate(() => window.bot.render
   await page.screenshot({ path: path.join(OUT, 'v3_badge.png') });
   check('world complete screen shows the Fire Explorer badge', (await page.textContent('#badge-name')).includes('Peneroka Api'));
   const save = await ev(() => JSON.parse(localStorage.getItem('curious-affan-save-v1')));
-  check('badge saved and World 5 unlocked (shown as coming soon)', save.badges.includes('fire-explorer') && save.unlockedWorld === 4 && save.stagesDone.volcano === 3, JSON.stringify({ b: save.badges, u: save.unlockedWorld }));
+  check('badge saved and World 5 unlocked', save.badges.includes('fire-explorer') && save.unlockedWorld === 4 && save.stagesDone.volcano === 3, JSON.stringify({ b: save.badges, u: save.unlockedWorld }));
   await page.click('#btn-complete-menu');
   const cards2 = await page.$$eval('.world-card', (els) => els.map((e) => e.className + '|' + e.textContent));
-  check('world map: World 4 is done and World 5 says "Akan datang!"', !cards2[3].includes('locked') && cards2[4].includes('Akan datang'));
+  check('world map: World 4 is done and World 5 is open to play', !cards2[3].includes('locked') && cards2[4].includes('live') && !cards2[4].includes('locked'));
   const missing = await ev(async () => {
     const subs = [[3, 1], [4, 2], [5, 2], [5, 3], [6, 1], [6, 3], [7, 2], [7, 4], [8, 3], [8, 5], [9, 4], [9, 6], [10, 3], [10, 5], [10, 7]];
     const adds = [[3, 3], [4, 2], [5, 1], [4, 3], [2, 5], [6, 1], [4, 4], [5, 3], [6, 2], [5, 4], [7, 2], [5, 5], [6, 4], [3, 6]];

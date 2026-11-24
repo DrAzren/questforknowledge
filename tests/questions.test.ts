@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   ADDITION_POOL, additionQuestion, countQuestion, ENCOURAGE_LINES, missingLetterQuestion, missingNumberQuestion,
-  numberSequenceQuestion, PRAISE_LINES, spokenAdditionQuestion, spokenSubtractionQuestion, SUBTRACTION_POOL, subtractionQuestion,
+  firstLetterQuestion, FIRST_LETTER_WORDS, lowercaseMatchQuestion, MATCH_LETTERS, numberSequenceQuestion, penguinCountQuestion, PRAISE_LINES, spokenAdditionQuestion, spokenSubtractionQuestion, SUBTRACTION_POOL, subtractionQuestion,
   type ChoiceQuestion,
 } from '../src/edu/questions';
 
@@ -83,6 +83,47 @@ describe('question generators (age 4-6 limits)', () => {
       expect(q.detail!.split('  ')).toEqual(q.sequence.map((n, k) => (k === q.missingIndex ? '?' : String(n))));
       expect(q.options.every((o) => o >= 1 && o <= 20)).toBe(true);
       expect(q.voice).toBe('q_nombor_hilang');
+      checkOptions(q);
+    }
+  });
+
+  it('small-letter match: the answer is the small form of the capital shown, among other small letters', () => {
+    for (let i = 0; i < 800; i++) {
+      const q = lowercaseMatchQuestion(rand);
+      expect(MATCH_LETTERS).toContain(q.answer);
+      expect(q.upper).toBe(q.answer.toUpperCase());
+      expect(q.detail).toBe(q.upper);
+      expect(q.voice).toBe(`q_huruf_${q.answer}`);
+      expect(q.options.every((o) => o === o.toLowerCase() && MATCH_LETTERS.includes(o))).toBe(true);
+      checkOptions(q);
+    }
+  });
+
+  it('first letter: the word is shown without its first letter, and the choices are capitals', () => {
+    const seen = new Set<string>();
+    for (let i = 0; i < 800; i++) {
+      const q = firstLetterQuestion(rand);
+      const item = FIRST_LETTER_WORDS.find((w) => w.word === q.word)!;
+      seen.add(q.word);
+      expect(q.answer).toBe(q.word[0]);
+      expect(q.detail!.replace(/ /g, '')).toBe(`_${q.word.slice(1)}`);
+      expect(q.prompt).toContain(item.emoji);
+      expect(q.voice).toBe(`q_awal_${item.id}`);
+      expect(q.options.every((o) => /^[A-Z]$/.test(o))).toBe(true);
+      checkOptions(q);
+    }
+    expect(seen.size).toBe(FIRST_LETTER_WORDS.length);
+    // No two words share a first letter, so a wrong choice is never also right.
+    expect(new Set(FIRST_LETTER_WORDS.map((w) => w.word[0])).size).toBe(FIRST_LETTER_WORDS.length);
+  });
+
+  it('penguin counting: between 3 and 8, choices within 1-10', () => {
+    for (let i = 0; i < 800; i++) {
+      const q = penguinCountQuestion(rand);
+      expect(q.answer).toBeGreaterThanOrEqual(3);
+      expect(q.answer).toBeLessThanOrEqual(8);
+      expect(q.options.every((o) => o >= 1 && o <= 10)).toBe(true);
+      expect(q.voice).toBe('q_kira_penguin');
       checkOptions(q);
     }
   });

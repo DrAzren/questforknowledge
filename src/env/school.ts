@@ -4,7 +4,7 @@ import { labelDecal, labelTexture, mat, mergeInto, shadow, type Updatable } from
 /** Scenery and props for the magic school world. */
 
 export const SCHOOL_COLORS = [0xff6b6b, 0x4dabf7, 0xffd43b, 0x69db7c, 0xda77f2, 0xff922b];
-const EMOJI_FONT = '"Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif';
+export const EMOJI_FONT = '"Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif';
 const css = (n: number): string => `#${n.toString(16).padStart(6, '0')}`;
 
 function canvasTexture(w: number, h: number, draw: (g: CanvasRenderingContext2D) => void): THREE.CanvasTexture {
