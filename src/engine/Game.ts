@@ -28,7 +28,7 @@ export class Game implements GameApi {
   rand: () => number = Math.random;
 
   private renderer: THREE.WebGLRenderer;
-  private camera = new THREE.PerspectiveCamera(52, 1, 0.1, 400);
+  readonly camera = new THREE.PerspectiveCamera(52, 1, 0.1, 400);
   private sun = new THREE.DirectionalLight(0xffffff, 2.5);
   private hemi = new THREE.HemisphereLight(0xffffff, 0x556b2f, 1);
   private sky: THREE.Mesh | null = null;
@@ -713,6 +713,51 @@ export class Game implements GameApi {
   }
 
   /** Snapshot of the game state for automated tests. */
+  /**
+   * For tests: what solid scenery stands between the camera and Affan. Checks
+   * four sight lines (to his head, his waist, his feet, and the ground a few
+   * steps ahead of him) and names the first thing blocking each.
+   */
+  viewBlocked(): { line: 'head' | 'waist' | 'feet' | 'ahead'; size: number; at: [number, number, number]; what: string }[] {
+    const stage = this.stage;
+    if (!stage) return [];
+    const b = this.body;
+    const from = this.camera.position;
+    const ray = new THREE.Raycaster();
+    ray.camera = this.camera;
+    const lines: ['head' | 'waist' | 'feet' | 'ahead', THREE.Vector3][] = [
+      ['head', new THREE.Vector3(b.x, b.y + 1.1, b.z)],
+      ['waist', new THREE.Vector3(b.x, b.y + 0.65, b.z)],
+      ['feet', new THREE.Vector3(b.x, b.y + 0.25, b.z)],
+      ['ahead', new THREE.Vector3(b.x, b.y + 0.3, b.z - 3.5)],
+    ];
+    const solid = (o: THREE.Object3D): boolean => {
+      const m = o as THREE.Mesh;
+      if (!m.isMesh || Array.isArray(m.material)) return false;
+      if (m.material.transparent && m.material.opacity < 0.6) return false;
+      if ((m.material as THREE.ShaderMaterial).isShaderMaterial) return false;
+      for (let p: THREE.Object3D | null = o; p; p = p.parent) if (!p.visible) return false;
+      return true;
+    };
+    const out: { line: 'head' | 'waist' | 'feet' | 'ahead'; size: number; at: [number, number, number]; what: string }[] = [];
+    // Tests step the game without rendering, so world matrices may be stale.
+    stage.group.updateMatrixWorld(true);
+    for (const [line, to] of lines) {
+      const dir = to.clone().sub(from);
+      const dist = dir.length();
+      ray.set(from, dir.normalize());
+      ray.far = dist - 0.3;
+      const hit = ray.intersectObject(stage.group, true).find((h) => solid(h.object));
+      if (!hit) continue;
+      const m = hit.object as THREE.Mesh;
+      if (!m.geometry.boundingSphere) m.geometry.computeBoundingSphere();
+      const scale = m.getWorldScale(new THREE.Vector3());
+      const colour = (m.material as THREE.MeshStandardMaterial).color?.getHexString() ?? '';
+      out.push({ line, size: m.geometry.boundingSphere!.radius * Math.max(scale.x, scale.y, scale.z), at: [hit.point.x, hit.point.y, hit.point.z], what: `${m.geometry.type} #${colour}` });
+    }
+    return out;
+  }
+
   debugState(): Record<string, unknown> {
     return {
       mode: this.mode,

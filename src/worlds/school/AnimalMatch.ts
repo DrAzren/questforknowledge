@@ -99,7 +99,8 @@ export class AnimalMatchStage extends SchoolStage {
         const collider = this.collide(discCollider(POD_X[i], podZ[r], POD_R, POD_H, 0, 'podium'));
         const card = makeFlashCard(a.emoji);
         card.position.set(POD_X[i], 0, podZ[r] - 2.5);
-        this.group.add(card);
+        // Once Affan has gone past a card it would stand right in front of the camera: it fades instead.
+        this.veil(card);
         this.collide(boxCollider(POD_X[i], podZ[r] - 2.5, 1.2, 0.15, 4, 0));
         return { animal: a.id, podium, card, collider, x: POD_X[i], z: podZ[r], state: 'idle' };
       });
@@ -116,7 +117,7 @@ export class AnimalMatchStage extends SchoolStage {
     const sign = makeSign('Kenal Haiwan', 3.4);
     sign.position.set(-5, 0, 6.4);
     sign.rotation.y = 0.35;
-    this.decor.add(sign);
+    this.veil(shadow(sign), true);
     this.coinLine(0, 5.6, 0, 2.6, 3);
     this.coin(0, 0, -14.05);
     this.coin(0, 0, -17.5);
@@ -138,17 +139,20 @@ export class AnimalMatchStage extends SchoolStage {
   /** A clipped hedge across the path with a white picket gate in the middle. */
   private gardenGate(z: number): Gate {
     const doorHalf = 1.7;
+    const hedges = new THREE.Group();
     for (const s of [-1, 1]) {
       const inner = doorHalf;
       const w = this.half + 5 - inner;
       const hedge = new THREE.Mesh(new THREE.BoxGeometry(w, 1.9, 1.1), mat(0x2f9e44, 0.95));
       hedge.position.set(s * (inner + w / 2), 0.95, z);
-      this.decor.add(hedge);
+      hedges.add(hedge);
       const topiary = new THREE.Mesh(new THREE.SphereGeometry(0.75, 12, 10), mat(0x37b24d, 0.95));
       topiary.position.set(s * (inner + 0.5), 2.3, z);
-      this.decor.add(topiary);
+      hedges.add(topiary);
       this.collide(boxCollider(s * (inner + w / 2), z, w / 2, 0.55, 3.4, 0));
     }
+    shadow(hedges);
+    this.veil(hedges, true);
     const picket = makePicketFence(doorHalf * 2 - 0.1, 1.9);
     picket.position.set(0, 0, z);
     shadow(picket);

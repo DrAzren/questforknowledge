@@ -88,7 +88,7 @@ export class MissingAlphabetStage extends JungleStage {
     const sign = makeSign('Huruf Yang Hilang', 4);
     sign.position.set(-4.6, 0, 3.2);
     sign.rotation.y = 0.35;
-    this.decor.add(sign);
+    this.veil(shadow(sign), true);
 
     this.coinLine(0, 3.5, 0, 0.5, 3);
     this.coinLine(-1.2, -13.5, 1.2, -18.5, 4);

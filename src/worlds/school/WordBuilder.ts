@@ -93,7 +93,7 @@ export class WordBuilderStage extends SchoolStage {
     const sign = makeSign('Bina Perkataan', 3.8);
     sign.position.set(-5, 0, 6.6);
     sign.rotation.y = 0.35;
-    this.decor.add(sign);
+    this.veil(shadow(sign), true);
     this.coinLine(0, 5.6, 0, 4, 2);
     this.coinLine(-3.6, -14, 3.6, -19, 4);
     this.coinLine(-2, -37.6, 2, -38.6, 3);
@@ -159,7 +159,7 @@ export class WordBuilderStage extends SchoolStage {
     easel.position.set(-4.3, 0, segMinZ + 2.6);
     easel.rotation.y = 0.3;
     easel.userData.setWord('_ '.repeat(letters.length).trim());
-    this.group.add(easel);
+    this.veil(easel);
     this.collide(boxCollider(-4.3, segMinZ + 2.4, 1.3, 0.6, 3.6, 0));
     shadow(easel);
 

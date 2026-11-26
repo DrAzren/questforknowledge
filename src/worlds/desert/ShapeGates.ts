@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { shuffle } from '../../edu/questions';
 import { discCollider, type Collider } from '../../engine/Physics';
-import { makeGoalArch, makeSign, mat, rng } from '../../env/builders';
+import { makeGoalArch, makeSign, mat, rng, shadow } from '../../env/builders';
 import {
   CARPET_COLORS, FLAT_SHAPE_ICON, FLAT_SHAPES, makeColumn, makeFlatShape, makePressurePlate, SANDSTONE_DARK, type FlatShape,
 } from '../../env/desert';
@@ -103,7 +103,7 @@ export class ShapeGatesStage extends DesertStage {
     const sign = makeSign('Pintu Bentuk', 3.4);
     sign.position.set(-4.9, 0, 5.2);
     sign.rotation.y = 0.35;
-    this.decor.add(sign);
+    this.veil(shadow(sign), true);
 
     this.coinLine(0, 4.5, 0, 1.5, 3);
     this.coinLine(-2, -7.6, 2, -9.2, 3);
@@ -122,7 +122,7 @@ export class ShapeGatesStage extends DesertStage {
       for (const s of [-1, 1]) {
         const col = makeColumn(3.6 + rand());
         col.position.set(s * 4.4, 0, z + 1.5);
-        this.decor.add(col);
+        this.veil(shadow(col), true);
       }
     }
     this.desertBorders(rand, -76, 22, { ruins: true });

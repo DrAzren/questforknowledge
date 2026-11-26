@@ -76,6 +76,33 @@ const check = (name, ok, extra = '') => console.log(`${ok ? 'PASS' : 'FAIL'}  ${
   await page.tap('#btn-settings-back'); await page.tap('#btn-resume');
   const info = await page.evaluate(() => { const g = window.__game; g.renderer.info.autoReset = true; g.renderer.render(g.scene, g.camera); return { calls: g.renderer.info.render.calls, tris: g.renderer.info.render.triangles, geos: g.renderer.info.memory.geometries, tex: g.renderer.info.memory.textures }; });
   check('render cost is phone-friendly (draw calls < 250, triangles < 300k)', info.calls < 250 && info.tris < 300000, JSON.stringify(info));
+  // A wall between the camera and Affan must really be drawn see-through. Checked on the actual
+  // pixels with the game running normally: the door wall is first drawn solid for a second, then
+  // Affan is put just past the open door, and the picture is compared with the same view when the
+  // wall is forced solid again.
+  await page.evaluate(() => window.__game.loadStage(1, 0, false));
+  await page.waitForFunction(() => window.__game.mode === 'play', null, { timeout: 60000 });
+  await page.waitForTimeout(1200);
+  await page.evaluate(() => { const g = window.__game; g.stage.rounds[0].gate.open(); g.body.active = false; g.body.x = 0.4; g.body.y = 0; g.body.z = -9.6; g.snapCamera(g.body); });
+  await page.waitForTimeout(1500);
+  const view = await page.evaluate(() => { const g = window.__game; return { hidden: g.viewBlocked().filter((h) => h.line === 'head' || h.line === 'waist').length, faded: g.stage.veils.filter((v) => v.k === 1).length }; });
+  const seeThrough = await page.screenshot({ path: path.join(OUT, 'm_wall_faded.png') });
+  await page.evaluate(() => { for (const v of window.__game.stage.veils) if (v.k === 1) for (const m of v.mats) { m.material.opacity = 1; m.material.transparent = false; m.material.depthWrite = true; m.material.needsUpdate = true; } });
+  await page.waitForTimeout(500);
+  const solid = await page.screenshot({ path: path.join(OUT, 'm_wall_solid.png') });
+  const changed = await page.evaluate(async ([a, b]) => {
+    const load = (src) => new Promise((res) => { const i = new Image(); i.onload = () => res(i); i.src = 'data:image/png;base64,' + src; });
+    const [ia, ib] = [await load(a), await load(b)];
+    const w = 200, h = Math.round((200 * ia.height) / ia.width);
+    const px = (img) => { const c = document.createElement('canvas'); c.width = w; c.height = h; const x = c.getContext('2d'); x.drawImage(img, 0, 0, w, h); return x.getImageData(0, 0, w, h).data; };
+    const [da, db] = [px(ia), px(ib)];
+    let n = 0;
+    for (let i = 0; i < da.length; i += 4) if (Math.abs(da[i] - db[i]) + Math.abs(da[i + 1] - db[i + 1]) + Math.abs(da[i + 2] - db[i + 2]) > 36) n++;
+    return n / (w * h);
+  }, [seeThrough.toString('base64'), solid.toString('base64')]);
+  check('a door wall between the camera and Affan is really drawn see-through (pixels compared with the wall solid)', view.faded >= 1 && view.hidden === 0 && changed > 0.2, `faded=${view.faded} hidden=${view.hidden} pixels changed=${(changed * 100).toFixed(0)}%`);
+  await page.evaluate(() => window.__game.loadStage(0, 0, false));
+  await page.waitForFunction(() => window.__game.mode === 'play', null, { timeout: 60000 });
   // Portrait phone layout.
   await page.setViewportSize({ width: 390, height: 844 });
   await page.waitForTimeout(800);

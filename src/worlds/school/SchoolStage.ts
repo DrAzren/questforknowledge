@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { boxCollider, discCollider, type Collider } from '../../engine/Physics';
-import { makeBush, makeFlowers, makeTree, mat, shadow, type Updatable } from '../../env/builders';
+import { makeBush, makeFlowers, makeTree, mat, shadow, type Updatable, bakeColours } from '../../env/builders';
 import {
   makeBallPitBalls, makeBeachBall, makeBlackboard, makeBookPlatform, makeBookshelf, makeHopscotch, makePencil,
   makePicketFence, makePoster, makeSchoolhouse, makeSpinnerPost, SCHOOL_COLORS,
@@ -59,31 +59,38 @@ export abstract class SchoolStage extends ObstacleStage {
   protected pencilGate(z: number): { gate: Gate; board: ReturnType<typeof makeBlackboard> } {
     const doorHalf = 1.7;
     const height = 3.0;
+    // The wall, its posters and the blackboard fade together when they come between the camera and Affan.
+    const wall = new THREE.Group();
+    const extras = new THREE.Group();
     for (const s of [-1, 1]) {
       const inner = doorHalf;
       const outer = this.half + 5;
       const w = outer - inner;
       const wing = new THREE.Mesh(new THREE.BoxGeometry(w, height, 0.7), mat(WALL, 0.9));
       wing.position.set(s * (inner + w / 2), height / 2, z);
-      this.decor.add(wing);
+      wall.add(wing);
       const trim = new THREE.Mesh(new THREE.BoxGeometry(w, 0.3, 0.76), mat(WALL_TRIM, 0.8));
       trim.position.set(s * (inner + w / 2), height + 0.15, z);
-      this.decor.add(trim);
+      wall.add(trim);
       const skirt = new THREE.Mesh(new THREE.BoxGeometry(w, 0.4, 0.76), mat(0x4dabf7, 0.8));
       skirt.position.set(s * (inner + w / 2), 0.2, z);
-      this.decor.add(skirt);
+      wall.add(skirt);
       this.collide(boxCollider(s * (inner + w / 2), z, w / 2, 0.38, height + 0.3, 0));
       const poster = makePoster(s < 0 ? 'abc' : '123', 1.5);
       poster.position.set(s * (inner + 2.4), 1.75, z + 0.36);
-      this.group.add(poster);
+      extras.add(poster);
     }
     const lintel = new THREE.Mesh(new THREE.BoxGeometry(doorHalf * 2 + 0.2, 0.5, 0.8), mat(WALL_TRIM, 0.8));
     lintel.position.set(0, height + 0.05, z);
-    this.decor.add(lintel);
+    wall.add(lintel);
+    shadow(wall);
     this.collide(boxCollider(0, z, doorHalf, 0.4, height + 0.3, height - 0.2));
     const board = makeBlackboard(3.0, 1.7);
     board.position.set(0, height + 1.25, z + 0.1);
-    this.group.add(board);
+    extras.add(board);
+    bakeColours(wall);
+    wall.add(extras);
+    this.veil(wall);
 
     const pencils = new THREE.Group();
     const n = 6;

@@ -119,7 +119,7 @@ export class NumberRiverStage extends JungleStage {
     const sign = makeSign('Sungai Nombor', 3.4);
     sign.position.set(-5.2, 0, 1.5);
     sign.rotation.y = 0.35;
-    this.decor.add(sign);
+    this.veil(shadow(sign), true);
 
     this.coinLine(-1.6, 2.5, 1.6, -3.5, 5);
     this.coin(-3, 0, -12.6);

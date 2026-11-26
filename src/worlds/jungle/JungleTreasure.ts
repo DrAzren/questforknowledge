@@ -106,7 +106,7 @@ export class JungleTreasureStage extends JungleStage {
     const sign = makeSign('Harta Karun Hutan', 4);
     sign.position.set(-6.5, 0, 10.8);
     sign.rotation.y = 0.4;
-    this.decor.add(sign);
+    this.veil(shadow(sign), true);
 
     this.checkpoint(0, 0, 9.6, 3, false);
     this.coinLine(-3, 11, 3, 11, 4);
@@ -187,7 +187,8 @@ export class JungleTreasureStage extends JungleStage {
       t.add(leaf);
     }
     t.position.set(x, 0, z);
-    this.decor.add(shadow(t));
+    // A tree in the clearing fades when Affan walks behind it.
+    this.veil(shadow(t), true);
   }
 
   private startTask(index: number): void {

@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { spokenAdditionQuestion, type ChoiceQuestion } from '../../edu/questions';
-import { makeGoalArch, makeSign, rng } from '../../env/builders';
+import { makeGoalArch, makeSign, rng, shadow } from '../../env/builders';
 import { makeBoulder } from '../../env/desert';
 import { makeRockArch, ROCK_DARK } from '../../env/volcano';
 import { discCollider } from '../../engine/Physics';
@@ -84,7 +84,7 @@ export class LavaBridgesStage extends VolcanoStage {
     const sign = makeSign('Jambatan Lava', 3.6);
     sign.position.set(-5, 0, 6.6);
     sign.rotation.y = 0.35;
-    this.decor.add(sign);
+    this.veil(shadow(sign), true);
     this.coinLine(0, 5.6, 0, 2.6, 3);
     this.coinLine(0, -7, 0, -11, 3);
     this.coinLine(-3, -15, 3, -21, 4);

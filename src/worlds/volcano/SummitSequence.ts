@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { numberSequenceQuestion } from '../../edu/questions';
 import { boxCollider, discCollider, type Collider } from '../../engine/Physics';
-import { makeGoalArch, makeSign, rng } from '../../env/builders';
+import { makeGoalArch, makeSign, rng, shadow } from '../../env/builders';
 import { makeBoulder } from '../../env/desert';
 import { makeCrystals, makeLavaStone, ROCK_DARK } from '../../env/volcano';
 import { VolcanoStage, type AnswerRock } from './VolcanoStage';
@@ -101,7 +101,7 @@ export class SummitSequenceStage extends VolcanoStage {
     const sign = makeSign('Puncak Gunung', 3.6);
     sign.position.set(-5, 0, 6.6);
     sign.rotation.y = 0.35;
-    this.decor.add(sign);
+    this.veil(shadow(sign), true);
     this.coinLine(0, 5.6, 0, 2.6, 3);
     this.coinLine(-3, -22, 3, -29, 4);
     this.coinLine(-3, -54.5, 3, -61, 4);

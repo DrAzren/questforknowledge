@@ -71,6 +71,48 @@ export function mergeInto(root: THREE.Object3D, keep: THREE.Object3D[] = [], cas
   }
 }
 
+/**
+ * Fuse every plain-coloured part under `root` into a single mesh by painting
+ * each part's colour onto its vertices: one draw call instead of one per
+ * colour. Textured, glowing and see-through parts are left as they are.
+ */
+export function bakeColours(root: THREE.Object3D): void {
+  root.updateMatrixWorld(true);
+  const inv = new THREE.Matrix4().copy(root.matrixWorld).invert();
+  const geos: THREE.BufferGeometry[] = [];
+  const done: THREE.Mesh[] = [];
+  let flat = false;
+  let cast = false;
+  let rough = 0;
+  root.traverse((o) => {
+    const m = o as THREE.Mesh;
+    if (!m.isMesh || (m as unknown as THREE.InstancedMesh).isInstancedMesh || Array.isArray(m.material)) return;
+    const material = m.material as THREE.MeshStandardMaterial;
+    if (!material.isMeshStandardMaterial || material.map || material.transparent || material.emissive.getHex() !== 0) return;
+    let g = m.geometry.clone();
+    if (g.index) g = g.toNonIndexed();
+    for (const name of Object.keys(g.attributes)) if (name !== 'position' && name !== 'normal') g.deleteAttribute(name);
+    g.applyMatrix4(new THREE.Matrix4().multiplyMatrices(inv, m.matrixWorld));
+    const n = g.attributes.position.count;
+    const colours = new Float32Array(n * 3);
+    for (let i = 0; i < n; i++) colours.set([material.color.r, material.color.g, material.color.b], i * 3);
+    g.setAttribute('color', new THREE.BufferAttribute(colours, 3));
+    geos.push(g);
+    done.push(m);
+    flat = flat || material.flatShading;
+    cast = cast || m.castShadow;
+    rough += material.roughness;
+  });
+  if (geos.length < 2) return;
+  const merged = mergeGeometries(geos, false);
+  geos.forEach((g) => g.dispose());
+  for (const m of done) m.removeFromParent();
+  const mesh = new THREE.Mesh(merged, new THREE.MeshStandardMaterial({ vertexColors: true, roughness: rough / done.length, flatShading: flat }));
+  mesh.castShadow = cast;
+  mesh.receiveShadow = true;
+  root.add(mesh);
+}
+
 /** Deterministic pseudo-random generator so scenery is identical on every run. */
 export function rng(seed: number): () => number {
   let s = seed >>> 0;

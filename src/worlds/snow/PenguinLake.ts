@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { numberSequenceQuestion, penguinCountQuestion, spokenSubtractionQuestion } from '../../edu/questions';
 import { boxCollider, discCollider } from '../../engine/Physics';
-import { makeGoalArch, makeSign, mat, rng } from '../../env/builders';
+import { makeGoalArch, makeSign, mat, rng, shadow } from '../../env/builders';
 import { ICE, makeAnswerPad, makeIceCrystals, makeIgloo, makePenguin, makePolarBear, type AnswerPadMesh } from '../../env/snow';
 import { SnowStage, textOptions, type SnowRound } from './SnowStage';
 
@@ -100,7 +100,7 @@ export class PenguinLakeStage extends SnowStage {
     const sign = makeSign('Tasik Penguin', 3.6);
     sign.position.set(-5, 0, 7.4);
     sign.rotation.y = 0.35;
-    this.decor.add(sign);
+    this.veil(shadow(sign), true);
     this.coinLine(4.6, 6, 4.6, 2, 3);
     this.coinLine(0, -7, 0, -11, 3);
     this.coinLine(-4.6, -17, -4.6, -21.4, 3);

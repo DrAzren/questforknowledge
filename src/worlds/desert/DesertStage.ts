@@ -84,26 +84,31 @@ export abstract class DesertStage extends ObstacleStage {
     const height = 3.3;
     const stone = mat(SANDSTONE, 0.95);
     const dark = mat(SANDSTONE_DARK, 0.95);
+    // The wall is its own piece of scenery (not merged with the rest) so that it can fade
+    // when Affan has gone through the door and the camera is still on the near side.
+    const wall = new THREE.Group();
     for (const s of [-1, 1]) {
       const inner = doorHalf;
       const outer = this.half + 5;
       const w = outer - inner;
       const wing = new THREE.Mesh(new THREE.BoxGeometry(w, height, 0.9), stone);
       wing.position.set(s * (inner + w / 2), height / 2, z);
-      this.decor.add(wing);
+      wall.add(wing);
       this.collide(boxCollider(s * (inner + w / 2), z, w / 2, 0.45, height, 0));
       const pillar = new THREE.Mesh(new THREE.BoxGeometry(0.7, height + 0.6, 1.2), dark);
       pillar.position.set(s * (doorHalf + 0.2), (height + 0.6) / 2, z);
-      this.decor.add(pillar);
+      wall.add(pillar);
       for (let i = 0; i < 4; i++) {
         const crenel = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.45, 0.9), dark);
         crenel.position.set(s * (inner + 1 + i * 1.5), height + 0.22, z);
-        this.decor.add(crenel);
+        wall.add(crenel);
       }
     }
     const lintel = new THREE.Mesh(new THREE.BoxGeometry(doorHalf * 2 + 1.4, 0.7, 1.2), dark);
     lintel.position.set(0, height + 0.5, z);
-    this.decor.add(lintel);
+    wall.add(lintel);
+    shadow(wall);
+    this.veil(wall, true);
     this.collide(boxCollider(0, z, doorHalf, 0.45, height + 0.85, height + 0.15));
     const door = new THREE.Mesh(new THREE.BoxGeometry(doorHalf * 2 - 0.1, height + 0.1, 0.5), mat(0x9a6b3c, 0.9));
     door.position.set(0, height / 2, z);

@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { firstLetterQuestion, lowercaseMatchQuestion, missingLetterQuestion } from '../../edu/questions';
-import { makeGoalArch, makeSign, rng } from '../../env/builders';
+import { makeGoalArch, makeSign, rng, shadow } from '../../env/builders';
 import { makeIceCrystals, makeIgloo, makePolarBear } from '../../env/snow';
 import { SnowStage, textOptions } from './SnowStage';
 
@@ -54,7 +54,7 @@ export class AlphabetSnowStage extends SnowStage {
     const sign = makeSign('Abjad Salji', 3.2);
     sign.position.set(-5, 0, 6.6);
     sign.rotation.y = 0.35;
-    this.decor.add(sign);
+    this.veil(shadow(sign), true);
     this.coinLine(0, 5.6, 0, 2.6, 3);
     this.coinLine(0, -7, 0, -11, 3);
     this.coinLine(-3, -13.6, 3, -13.6, 3);

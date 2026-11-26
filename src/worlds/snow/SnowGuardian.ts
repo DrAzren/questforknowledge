@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { missingLetterQuestion, shuffle, spokenAdditionQuestion } from '../../edu/questions';
-import { makeSign, rng } from '../../env/builders';
+import { makeSign, rng, shadow } from '../../env/builders';
 import { CARPET_COLORS, FLAT_SHAPES } from '../../env/desert';
 import { makeAurora, makeIceCrystals, makeIgloo, makePolarBear, makeSnowGuardian, makeSnowman } from '../../env/snow';
 import { ANIMALS } from '../school/AnimalMatch';
@@ -96,7 +96,7 @@ export class SnowGuardianStage extends SnowStage {
     const sign = makeSign('Penjaga Salji', 3.6);
     sign.position.set(-5, 0, 6.6);
     sign.rotation.y = 0.35;
-    this.decor.add(sign);
+    this.veil(shadow(sign), true);
     this.coinLine(0, 5.6, 0, 2.6, 3);
     this.coin(0, 0, -10.3);
     this.coin(0, 0, -14.1);

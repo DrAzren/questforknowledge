@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { shuffle } from '../../edu/questions';
 import { boxCollider, type Collider } from '../../engine/Physics';
-import { makeGoalArch, makeSign, mat, rng, type Updatable } from '../../env/builders';
+import { makeGoalArch, makeSign, mat, rng, type Updatable, shadow } from '../../env/builders';
 import { CARPET_COLORS, CARPET_ICON, makeCarpet, makeColumn, SANDSTONE } from '../../env/desert';
 import { DesertStage } from './DesertStage';
 
@@ -105,7 +105,7 @@ export class ColourCarpetsStage extends DesertStage {
     const sign = makeSign('Permaidani Warna', 4);
     sign.position.set(-5, 0, 6.2);
     sign.rotation.y = 0.35;
-    this.decor.add(sign);
+    this.veil(shadow(sign), true);
     this.coinLine(0, 5, 0, 1, 3);
     this.coinLine(-3, -19.5, 3, -27, 4);
     this.coinLine(-2.5, -47, 2.5, -55.5, 4);

@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { spokenSubtractionQuestion, type ChoiceQuestion } from '../../edu/questions';
 import { discCollider, type Collider } from '../../engine/Physics';
-import { makeGoalArch, makeSign, mat, rng } from '../../env/builders';
+import { makeGoalArch, makeSign, mat, rng, shadow } from '../../env/builders';
 import { makeBoulder } from '../../env/desert';
 import {
   CRYSTAL_COLORS, makeCountCrystal, makeCrystals, makeNumberRock, makeRockArch, ROCK_DARK,
@@ -126,7 +126,7 @@ export class CrystalCaveStage extends VolcanoStage {
     const sign = makeSign('Gua Kristal', 3.2);
     sign.position.set(-5, 0, 6.6);
     sign.rotation.y = 0.35;
-    this.decor.add(sign);
+    this.veil(shadow(sign), true);
     this.coinLine(-4.5, 5.6, -4.5, 2.6, 3);
     this.coinLine(-3, -14, 3, -22, 4, STEP);
     this.coinLine(-3, -37, 3, -48, 5, STEP * 2);

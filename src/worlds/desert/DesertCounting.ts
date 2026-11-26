@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { numberChoices, randInt, shuffle } from '../../edu/questions';
 import { discCollider, type Collider } from '../../engine/Physics';
-import { makeChest, makeSign, mat, rng, shadow, type Updatable } from '../../env/builders';
+import { makeChest, makeSign, mat, rng, shadow, type Updatable, mergeInto } from '../../env/builders';
 import { makeCactus, makeCamel, makeColumn, makeDrum, makeWallStar, SANDSTONE, SANDSTONE_DARK } from '../../env/desert';
 import { DesertStage, type Gate } from './DesertStage';
 
@@ -88,7 +88,8 @@ export class DesertCountingStage extends DesertStage {
     for (const [x, z] of shuffle(g, cactusSlots).slice(0, cacti)) {
       const cactus = makeCactus(rand, 0.95);
       cactus.position.set(x, 0.3, z);
-      this.decor.add(cactus);
+      // (A cactus fades if Affan walks behind it.)
+      this.veil(shadow(cactus), true);
       this.placed.cacti++;
     }
     for (const s of [-1, 1]) {
@@ -108,12 +109,16 @@ export class DesertCountingStage extends DesertStage {
     const starSlots: [number, number][] = [];
     for (const s of [-1, 1]) for (const x of [2.9, 4.3, 5.7]) for (const y of [1.55, 2.7]) starSlots.push([s * x, y]);
     const gateZ3 = -67;
+    // (They fade together with the wall once Affan is through the gate.)
+    const wallStars = new THREE.Group();
     for (const [x, y] of shuffle(g, starSlots).slice(0, stars)) {
       const star = makeWallStar(0.46);
       star.position.set(x, y, gateZ3 + 0.5);
-      this.decor.add(star);
+      wallStars.add(star);
       this.placed.stars++;
     }
+    mergeInto(wallStars);
+    this.veil(wallStars);
     this.station(2, `Kira bintang ⭐. Ada berapa?`, 'q_kira_bintang', stars, -59, gateZ3, -53, g);
 
     // --- Treasure ---
@@ -129,7 +134,7 @@ export class DesertCountingStage extends DesertStage {
     for (const s of [-1, 1]) {
       const col = makeColumn(3.2);
       col.position.set(s * 3.4, 0, this.chestPos.z - 1.6);
-      this.decor.add(col);
+      this.veil(shadow(col), true);
     }
 
     this.checkpoint(0, 0, 7, 3, false);
@@ -139,7 +144,7 @@ export class DesertCountingStage extends DesertStage {
     const sign = makeSign('Kira di Gurun', 3.6);
     sign.position.set(-5, 0, 6.2);
     sign.rotation.y = 0.35;
-    this.decor.add(sign);
+    this.veil(shadow(sign), true);
     this.coinLine(0, 5.5, 0, 2.5, 3);
     this.coinLine(0, -5.5, 0, -10.5, 4);
     this.coin(0, 0, -18.3);

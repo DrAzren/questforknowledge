@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { shuffle } from '../../edu/questions';
 import { boxCollider, type Collider } from '../../engine/Physics';
-import { makeGoalArch, makeSign, rng } from '../../env/builders';
+import { makeGoalArch, makeSign, rng, shadow } from '../../env/builders';
 import { makeLetterBlock, SCHOOL_COLORS } from '../../env/school';
 import { SchoolStage, type Gate } from './SchoolStage';
 
@@ -105,7 +105,7 @@ export class LetterMatchStage extends SchoolStage {
     const sign = makeSign('Huruf Besar & Kecil', 4.2);
     sign.position.set(-4.9, 0, 5.4);
     sign.rotation.y = 0.35;
-    this.decor.add(sign);
+    this.veil(shadow(sign), true);
 
     this.coinLine(0, 4.5, 0, 1.5, 3);
     this.coinLine(-2, -7.6, 2, -9.2, 3);

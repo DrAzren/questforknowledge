@@ -3,7 +3,7 @@ import type { Affan, Emote } from '../character/Affan';
 import type { AudioManager } from '../engine/Audio';
 import { boxCollider, discCollider, type CharacterBody, type Collider, type PhysicsWorld } from '../engine/Physics';
 import type { ChoiceQuestion } from '../edu/questions';
-import { makeCheckpointFlag, makeCoin, makeStar, mat, shadow, type Sparkles, type Updatable } from '../env/builders';
+import { makeCheckpointFlag, makeCoin, makeStar, mat, shadow, type Sparkles, type Updatable, bakeColours } from '../env/builders';
 
 /** Everything a stage may ask the game to do. Keeps stages independent of the game shell. */
 export interface GameApi {
@@ -33,6 +33,7 @@ export interface GameApi {
   completeStage(opts?: { line?: { text: string; voice: string }; delay?: number }): void;
   /** A line spoken by another character: shown along the bottom of the screen and spoken if it has a voice clip. */
   caption(speaker: string, text: string, opts?: { voice?: string; duration?: number }): void;
+  readonly camera: THREE.PerspectiveCamera;
   /** Blend sky, fog and light from the world's own look (k = 0) toward another theme (k = 1). */
   mood(to: WorldTheme, k: number): void;
   /** Take the camera for a scripted shot. The player cannot move until it ends. */
@@ -79,6 +80,15 @@ interface Pickup {
   taken: boolean;
 }
 
+/** Something tall on or beside the path that fades whenever it comes between the camera and Affan. */
+interface Veil {
+  root: THREE.Object3D;
+  mats: { material: THREE.Material; opacity: number; transparent: boolean; depthWrite: boolean }[];
+  box: THREE.Box3 | null;
+  /** 0 = solid, 1 = faded to a ghost. */
+  k: number;
+}
+
 interface Checkpoint {
   x: number;
   y: number;
@@ -94,6 +104,11 @@ export abstract class StageBase {
   protected colliders: Collider[] = [];
   protected pickups: Pickup[] = [];
   protected checkpoints: Checkpoint[] = [];
+  private veils: Veil[] = [];
+  private veilRay = new THREE.Ray();
+  private veilA = new THREE.Vector3();
+  private veilB = new THREE.Vector3();
+  private veilHit = new THREE.Vector3();
   /** Platforms and obstacles that travel along a path; riders are carried by the physics. */
   protected movers: { mesh: THREE.Object3D; collider: Collider; path: (time: number) => [number, number, number]; meshDY: number }[] = [];
   /** Where Affan starts. */
@@ -134,6 +149,75 @@ export abstract class StageBase {
     const u = o as unknown as Updatable;
     if (u.userData.update) this.updatables.push(u);
     return o;
+  }
+
+  /**
+   * Register something that could hide Affan from the camera: a wall across
+   * the path, a sign, a tall card, a tree on the path. Whenever it stands
+   * between the camera and Affan it fades to a faint ghost of itself, and
+   * comes back when he is in view again, so the player never loses sight of
+   * him or of what he is about to jump onto. `bake` first fuses its plain
+   * parts into one mesh (do not use it for props whose parts change later).
+   */
+  protected veil<T extends THREE.Object3D>(root: T, bake = false): T {
+    if (!root.parent) this.add(root);
+    if (bake) bakeColours(root);
+    const own = new Map<THREE.Material, THREE.Material>();
+    root.traverse((o) => {
+      const m = o as THREE.Mesh;
+      if (!m.isMesh || Array.isArray(m.material)) return;
+      let copy = own.get(m.material);
+      if (!copy) {
+        copy = m.material.clone();
+        own.set(m.material, copy);
+      }
+      m.material = copy;
+    });
+    this.veils.push({
+      root, box: null, k: 0,
+      mats: [...own.values()].map((material) => ({ material, opacity: material.opacity, transparent: material.transparent, depthWrite: material.depthWrite })),
+    });
+    return root;
+  }
+
+  /** True if the box stands on the straight line from `from` to `to`, clearly before reaching `to`. */
+  private veilBlocks(box: THREE.Box3, from: THREE.Vector3, to: THREE.Vector3): boolean {
+    const dir = this.veilRay.direction.copy(to).sub(from);
+    const len = dir.length();
+    dir.divideScalar(len);
+    this.veilRay.origin.copy(from);
+    const hit = this.veilRay.intersectBox(box, this.veilHit);
+    return hit !== null && hit.distanceTo(from) < len - 0.45;
+  }
+
+  private tickVeils(dt: number): void {
+    if (!this.veils.length) return;
+    const cam = this.game.camera.position;
+    const b = this.game.body;
+    const head = this.veilA.set(b.x, b.y + 1.1, b.z);
+    const feet = this.veilB.set(b.x, b.y + 0.25, b.z);
+    for (const v of this.veils) {
+      if (!v.box) {
+        v.root.updateWorldMatrix(true, true);
+        v.box = new THREE.Box3().setFromObject(v.root).expandByScalar(0.3);
+      }
+      const hide = v.box.containsPoint(cam) || this.veilBlocks(v.box, cam, head) || this.veilBlocks(v.box, cam, feet);
+      const target = hide ? 1 : 0;
+      if (v.k === target) continue;
+      v.k += (target - v.k) * Math.min(1, dt * 10);
+      if (Math.abs(target - v.k) < 0.02) v.k = target;
+      const ghost = v.k > 0;
+      for (const m of v.mats) {
+        m.material.opacity = m.opacity * (1 - 0.86 * v.k);
+        const transparent = ghost || m.transparent;
+        if (m.material.transparent !== transparent) {
+          m.material.transparent = transparent;
+          // A solid material is drawn by a shader that ignores opacity; the renderer has to be told to switch.
+          m.material.needsUpdate = true;
+        }
+        m.material.depthWrite = ghost ? false : m.depthWrite;
+      }
+    }
   }
 
   protected collide<T extends Collider>(c: T): T {
@@ -242,6 +326,7 @@ export abstract class StageBase {
 
   update(dt: number): void {
     this.time += dt;
+    this.tickVeils(dt);
     for (const u of this.updatables) u.userData.update!(dt, this.time);
     for (const m of this.movers) {
       const [x, top, z] = m.path(this.time);
